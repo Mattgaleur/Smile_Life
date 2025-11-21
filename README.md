@@ -30,3 +30,4 @@ Matthias will handle the UI, Guillaume will manage the Wire component, and Coren
 ### Mock-ups
 
 ![](mockups/app.png)
+![](mockups/app_2.png)
