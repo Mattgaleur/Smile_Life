@@ -21,13 +21,15 @@ type PlayedHand = // Or type Life ? Or type Deck ?
 type Board = Map[UserId, PlayedHand]
 
 enum CardPile:
-    case Pile(cards: List[Card]) // A Stack would be better ?
+    case DefaultPile(cards: List[Card]) // A Stack would be better ?
     case DiscardPile(cards: List[Card])
 
 enum Event:
     case Discard(card: Card)
     case PlayCard(card: Card)
-    case PickCard(pile: CardPile)
+    case PickCard(isDefaultPile: Boolean)
+        // true -> DefaultPile
+        // false -> DiscardPile
 
 case class View(
     board: Board
@@ -36,6 +38,6 @@ case class View(
 case class State(
     hands: Map[UserId, Hand],
     board: Board, 
-    pile: CardPile.Pile,
+    pile: CardPile.DefaultPile,
     discardPile: CardPile.DiscardPile
 )
