@@ -25,9 +25,13 @@ enum CardPile:
     case DiscardPile(cards: List[Card])
 
 enum Event:
-    case Discard
-    case PlayCard
+    case Discard(card: Card)
+    case PlayCard(card: Card)
     case PickCard(pile: CardPile)
+
+case class View(
+    board: Board
+)
 
 case class State(
     hands: Map[UserId, Hand],
