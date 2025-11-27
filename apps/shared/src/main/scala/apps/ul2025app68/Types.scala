@@ -32,7 +32,8 @@ enum Event:
         // false -> DiscardPile
 
 case class View(
-    board: Board
+    board: Board,
+    hand: Hand
 )
 
 case class State(
