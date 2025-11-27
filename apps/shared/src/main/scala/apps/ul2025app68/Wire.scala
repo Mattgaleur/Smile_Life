@@ -40,17 +40,24 @@ object Wire extends AppWire[Event, View]:
       
 
   override object viewFormat extends WireFormat[View]:
-    val mapWire = MapWire(StringWire, VectorWire(IntWire))
+    val boardWire = MapWire(StringWire, VectorWire(IntWire))
+    val handWire = SeqWire(IntWire)
     override def encode(v: View): Value =
       v match
-        case View(board) => 
+        case View(board, hand) => 
             val boardWithOrdinal = board.map((id, playedHands) => (id, playedHands.map(_.ordinal)))
-            Obj("board" -> mapWire.encode(boardWithOrdinal))
+            val handWithOrdinal = hand.map(_.ordinal)
+            Obj(
+                "board" -> boardWire.encode(boardWithOrdinal),
+                "hand" -> handWire.encode(handWithOrdinal)
+            )
 
     override def decode(json: Value): Try[View] = Try:
-        val boardWithOrdinal = mapWire.decode(json("board")).get
-        val board : Board = boardWithOrdinal.map:
+        val boardWithOrdinal = boardWire.decode(json("board")).get
+        val board: Board = boardWithOrdinal.map:
             (id, playedHands) => (id, playedHands.map(Card.fromOrdinal(_)))
-        View(board)  
+        val handWithOrdinal = handWire.decode(json("hand")).get
+        val hand: Hand = handWithOrdinal.map(Card.fromOrdinal(_)).toVector
+        View(board,hand)  
             
         

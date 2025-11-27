@@ -57,7 +57,10 @@ class WireTests extends WebappSuite[Event, State, View]:
                 yield 
                     (randomStrings(rand, rand.nextInt(5)),listOfRandomCardsVector(rand.nextInt(nbOfSample)))
             ).toMap
-            View(randomBoard).testViewWire
+            View(
+                randomBoard,
+                listOfRandomCardsVector(rand.nextInt(10))
+            ).testViewWire
 
         
 val ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
