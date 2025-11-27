@@ -8,19 +8,49 @@ import scala.util.{Failure, Success, Try}
 
 object Wire extends AppWire[Event, View]:
   import Event.*
-  //import View.*
+  import View.*
   import ujson.*
 
   override object eventFormat extends WireFormat[Event]:
     override def encode(event: Event): Value =
-      ???      
+        event match
+            case Discard(card) => 
+                Obj("type" -> "Discard", "card.ordinal" -> card.ordinal)
+            case PlayCard(card) =>
+                Obj("type" -> "PlayCard", "card.ordinal" -> card.ordinal)
+            case PickCard(isDefaultPile) =>
+                Obj(
+                    "type" -> "PickCard",
+                    "isDefaultPile" -> BooleanWire.encode(isDefaultPile) 
+                )
+        
 
     override def decode(json: Value): Try[Event] = Try :
-      ???
+        json("type").str match
+            case "Discard" =>
+                val card : Card = Card.fromOrdinal(json("card.ordinal").num.toInt)
+                Discard(card)
+            case "PlayCard" => 
+                val card : Card = Card.fromOrdinal(json("card.ordinal").num.toInt)
+                PlayCard(card)
+            case "PickCard" =>
+                val isDefaultPile: Boolean = json("isDefaultPile").bool
+                PickCard(isDefaultPile)
+        
+      
 
-//   override object viewFormat extends WireFormat[View]:
-//     override def encode(v: View): Value =
-//       ???
+  override object viewFormat extends WireFormat[View]:
+    val mapWire = MapWire(StringWire, VectorWire(IntWire))
+    override def encode(v: View): Value =
+      v match
+        case View(board) => 
+            val boardWithOrdinal = board.map((id, playedHands) => (id, playedHands.map(_.ordinal)))
+            Obj("board" -> mapWire.encode(boardWithOrdinal))
 
-//     override def decode(json: Value): Try[View] = Try:
-//       ???
+    override def decode(json: Value): Try[View] = Try:
+        val boardWithOrdinal = mapWire.decode(json("board")).get
+        val board : Board = boardWithOrdinal.map:
+            (id, playedHands) => (id, playedHands.map(Card.fromOrdinal(_)))
+        View(board)  
+            
+        
