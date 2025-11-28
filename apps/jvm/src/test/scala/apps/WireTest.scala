@@ -4,9 +4,7 @@ import cs214.webapp.*
 import cs214.webapp.Action
 import cs214.webapp.utils.WebappSuite
 
-import java.util.Random
-import apps.ul2025app68.CardPile.DefaultPile
-import apps.ul2025app68.CardPile.DiscardPile
+import scala.util.Random
 import cs214.webapp.server.StateMachine
 
 class WireTests extends WebappSuite[Event, State, View]:
@@ -41,7 +39,7 @@ class WireTests extends WebappSuite[Event, State, View]:
 
     test("View Wire: Encode then decode outputs the same as the input"):
         val seed = 2
-        val rand = new Random(seed)
+        val rand = Random(seed)
         val nbOfSample = 10
 
         val listOfRandomCardsVector = List.fill(nbOfSample)(
@@ -55,20 +53,9 @@ class WireTests extends WebappSuite[Event, State, View]:
                 for 
                     i <- (1 to nbOfUser)
                 yield 
-                    (randomStrings(rand, rand.nextInt(5)),listOfRandomCardsVector(rand.nextInt(nbOfSample)))
+                    (rand.nextString(rand.nextInt(10)),listOfRandomCardsVector(rand.nextInt(nbOfSample)))
             ).toMap
             View(
                 randomBoard,
                 listOfRandomCardsVector(rand.nextInt(10))
             ).testViewWire
-
-        
-val ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-def randomStrings(
-    rand: Random,
-    length: Int,
-    chars: String = ALPHABET
-): String =
-    (1 to length).map(_ => chars(rand.nextInt(chars.length))).mkString
-    
