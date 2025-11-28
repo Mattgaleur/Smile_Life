@@ -63,6 +63,9 @@ case class CardPiles(
                 this.defaultPile == defaultPile && this.trashPile == trashPile
             case _ => 
                 false
+    
+    def DrawPileIsEmpty: Boolean = 
+        defaultPile.isEmpty
             
         
 }
@@ -84,5 +87,6 @@ enum PhaseView:
 case class State(
     hands: Map[UserId, Hand],
     board: Board, 
-    cardPiles: CardPiles
+    cardPiles: CardPiles,
+    currentPlayerTurn: UserId
 )

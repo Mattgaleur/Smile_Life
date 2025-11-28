@@ -30,81 +30,83 @@ class Logic extends StateMachine[Event, State, View]:
         val cardPiles: CardPiles = setPiles()
         val (hands, updatedCardPiles) = cardPiles.giveCardsTo(clients)
         val board: Board = clients.map((_, Vector.empty)).toMap
+        val firstPlayer: UserId = clients.head 
         State(
             hands = hands, 
             board = board, 
-            cardPiles = updatedCardPiles
+            cardPiles = updatedCardPiles,
+            currentPlayerTurn = firstPlayer
         )
 
     override def transition(state: State)(userId: UserId, event: Event): Try[Seq[Action[State]]] = Try:
-        val State(hands, board, cardPiles) = state
+        val State(hands, board, cardPiles, currentPlayerTurn) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
-        // if gameIsOver(state) then
-        //     throw IllegalMoveException("Accept your defeat, the game is over")
-        // else if isTurnOf(userId, ???) then
-        event match
-            case Event.PlayCard(card) =>
-                if cardsInHand.contains(card) then
-                    val newBoard: Board = board.updated(
-                        userId, board.get(userId).get.appended(card)
-                    )
-                    val newHands: Map[UserId, Hand] = hands.updated(
-                        userId, cardsInHand.drop(cardsInHand.indexOf(card))
-                    )
-                    Seq(
-                        Render(state.copy(
-                            hands = newHands,
-                            board = newBoard
-                        ))
-                    )
-                else
-                    throw IllegalMoveException("You can't play a card you don't have")
+        if gameIsOver(state) then
+            throw IllegalMoveException("Accept your defeat, the game is over")
+        else if isTurnOf(userId, state) then
+            event match
+                case Event.PlayCard(card) =>
+                    if cardsInHand.contains(card) then
+                        val newBoard: Board = board.updated(
+                            userId, board.get(userId).get.appended(card)
+                        )
+                        val newHands: Map[UserId, Hand] = hands.updated(
+                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                        )
+                        Seq(
+                            Render(state.copy(
+                                hands = newHands,
+                                board = newBoard
+                            ))
+                        )
+                    else
+                        throw IllegalMoveException("You can't play a card you don't have")
 
-            case Event.Discard(card) =>
-                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
-                    throw IllegalMoveException("You haven't picked a card yet")
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
-                    val newHands: Map[UserId, Hand] = hands.updated(
-                        userId, cardsInHand.drop(cardsInHand.indexOf(card))
-                    )
-                    Seq(
-                        Render(state.copy(
-                            hands = newHands,
-                            cardPiles = cardPiles.discard(card)
-                        ))
-                    )
-                else 
-                    throw IllegalStateException(
-                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
-                    )
+                case Event.Discard(card) =>
+                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                        throw IllegalMoveException("You haven't picked a card yet")
+                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                        val newHands: Map[UserId, Hand] = hands.updated(
+                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                        )
+                        Seq(
+                            Render(state.copy(
+                                hands = newHands,
+                                cardPiles = cardPiles.discard(card)
+                            ))
+                        )
+                    else 
+                        throw IllegalStateException(
+                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                        )
 
-            case Event.PickCard(isDefaultPile) =>
-                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
-                    cardPiles.pickCard(isDefaultPile) match
-                        case Some((card, updatedCardPiles)) => 
-                            Seq(
-                                Render(state.copy(
-                                    hands = hands.updated(userId, cardsInHand.appended(card)),
-                                    cardPiles = updatedCardPiles
-                                ))
-                            )
-                        case None =>
-                            throw IllegalMoveException("You can't pick a card from an empty pile")
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
-                    throw IllegalMoveException("You can't pick a card, you already did")
-                else 
-                    throw IllegalStateException(
-                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
-                    )
-        // else
-        //     throw IllegalMoveException("Not your turn to play")
+                case Event.PickCard(isDefaultPile) =>
+                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                        cardPiles.pickCard(isDefaultPile) match
+                            case Some((card, updatedCardPiles)) => 
+                                Seq(
+                                    Render(state.copy(
+                                        hands = hands.updated(userId, cardsInHand.appended(card)),
+                                        cardPiles = updatedCardPiles
+                                    ))
+                                )
+                            case None =>
+                                throw IllegalMoveException("You can't pick a card from an empty pile")
+                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                        throw IllegalMoveException("You can't pick a card, you already did")
+                    else 
+                        throw IllegalStateException(
+                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                        )
+        else
+            throw IllegalMoveException("Not your turn to play")
 
                 
         
 
     override def project(state: State)(userId: UserId): View = 
-        val State(hands, board, cardPiles) = state
+        val State(hands, board, cardPiles, currentPlayerTurn) = state
         if gameIsOver(state) then
             val winner = countSmiles(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
@@ -131,15 +133,15 @@ class Logic extends StateMachine[Event, State, View]:
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
-    val allCards = Card.values
-    val defaultPile: Pile =  // Pour toi Coco ;)
-        List.fill(size) {
+    val allCards = Card.values // all possibles card types from the Card enum
+    val defaultPile: Pile =  
+        List.fill(size) { //fill a list of size = input parameter "size"
             val i = rand.between(0, allCards.length) 
-            //pour chaque value de card possible (Flirt, Child, Money,..) on associe un Int
+            //pick a random index between 0 and the number of different types of Card
             allCards(i)
-            //on fill une pile (List[Card]) avec une card du type associé au Int(index i) ex: 0: Flirt, 1: Child etc..
+            //we fill the pile with the random card type selected, ex: 0=>Flirt, 1=>Child, etc...
         }
-    CardPiles(defaultPile, List.empty)
+    CardPiles(defaultPile, List.empty) //return a CardPile with our random draw pile and an empty discard pile
 
 
 /** 
@@ -183,9 +185,9 @@ def countSmiles(board: Board, userId: UserId): Int =
         // Special => +1
     
     val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
-
+    //get playedHands of the required player
     val baseScore = 
-        myCards.foldLeft(0) {
+        myCards.foldLeft(0) { //smile counter initialized at 0, for each played card associates a number of smiles
             case (acc, Card.Flirt) => acc + 1
             case (acc, Card.Child) => acc + 3
             case (acc, Card.Money) => acc
@@ -198,14 +200,19 @@ def countSmiles(board: Board, userId: UserId): Int =
     
     val malusAgainstMe =
         board.iterator
-            .filter((otherId, _) => otherId != userId)  
-            .map { case (_, cards) => cards.count(_ == Card.Malus) } //compte le nombre de carte malus
-            .sum
+            .filter((otherId, _) => otherId != userId) //keeps only the cards played by other players
+            .map { case (_, cards) => cards.count(_ == Card.Malus) } //counts the number of malus cards played by other players
+            .sum //each malus card played by another player is a -1 malus to the score
 
-    baseScore - malusAgainstMe
+    baseScore - malusAgainstMe //smiles obtained by placing cards minus smiles lost due to malus  
 
-def isTurnOf(userId: UserId, somethingToCheck: Any): Boolean =
-    ??? // Pour toi Coco, faudra que tu changes State je pense :D
 
+// add documentation
+def isTurnOf(userId: UserId, state: State): Boolean =
+    state.currentPlayerTurn == userId 
+
+//add documentation
 def gameIsOver(state: State): Boolean =
-    ??? // (☞ﾟヮﾟ)☞ Pour toi Coco, moi je connais pas les règles 
+    val cardPiles = state.cardPiles //get the draw and discard piles from the state
+    cardPiles.isEmpty
+    
