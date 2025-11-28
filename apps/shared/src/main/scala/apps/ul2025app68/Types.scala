@@ -20,9 +20,52 @@ type PlayedHand = // Or type Life ? Or type Deck ?
 
 type Board = Map[UserId, PlayedHand]
 
-enum CardPile:
-    case DefaultPile(cards: List[Card]) // A Stack would be better ?
-    case DiscardPile(cards: List[Card])
+type Pile = List[Card] // Maybe setting Pile as a mutable class would make things simpler
+
+case class CardPiles(
+    private val defaultPile: Pile,
+    private val trashPile: Pile
+) {
+    def discard(card: Card): CardPiles =
+        this.copy(
+            trashPile = card :: trashPile
+        )
+
+    def pickCard(fromDefaultPile: Boolean): Option[(Card, CardPiles)] =
+        if fromDefaultPile && defaultPile.nonEmpty then
+            Some(
+                defaultPile.head, 
+                this.copy(defaultPile = defaultPile.tail)
+            ) 
+        else if !fromDefaultPile && trashPile.nonEmpty then
+            Some(
+                trashPile.head, 
+                this.copy(trashPile = trashPile.tail)
+            ) 
+        else 
+            None
+    
+    def giveCardsTo(clients: Seq[UserId])(using nbOfCards: Int): (Map[UserId, Hand], CardPiles) =
+        val hands: Map[UserId, Hand] = clients.zipWithIndex.map((id, index) =>
+            (
+                id, 
+                defaultPile  // Isn't there a better way than to do the following ?
+                    .take((index + 1) * nbOfCards)
+                    .drop(index * nbOfCards).toVector
+            )
+        ).toMap 
+        val piles: CardPiles = CardPiles(defaultPile.drop(clients.length * nbOfCards), List.empty)
+        (hands, piles)
+
+    override def equals(that: Any): Boolean = 
+        that match
+            case CardPiles(defaultPile, trashPile) => 
+                this.defaultPile == defaultPile && this.trashPile == trashPile
+            case _ => 
+                false
+            
+        
+}
 
 enum Event:
     case Discard(card: Card)
@@ -39,6 +82,5 @@ case class View(
 case class State(
     hands: Map[UserId, Hand],
     board: Board, 
-    pile: CardPile.DefaultPile,
-    discardPile: CardPile.DiscardPile
+    cardPiles: CardPiles
 )
