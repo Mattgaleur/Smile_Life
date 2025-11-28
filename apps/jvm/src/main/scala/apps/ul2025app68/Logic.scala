@@ -11,6 +11,7 @@ import scala.caps.use
 import cs214.webapp.IllegalMoveException
 import cs214.webapp.Action.Render
 import apps.ul2025app68.Card.*
+import apps.ul2025app68.PhaseView.*
 
 given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
 val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
@@ -39,65 +40,65 @@ class Logic extends StateMachine[Event, State, View]:
         val State(hands, board, cardPiles) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
-        if gameIsOver(state) then
-            throw IllegalMoveException("Accept your defeat, the game is over")
-        else if isTurnOf(userId, ???) then
-            event match
-                case Event.PlayCard(card) =>
-                    if cardsInHand.contains(card) then
-                        val newBoard: Board = board.updated(
-                            userId, board.get(userId).get.appended(card)
-                        )
-                        val newHands: Map[UserId, Hand] = hands.updated(
-                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
-                        )
-                        Seq(
-                            Render(state.copy(
-                                hands = newHands,
-                                board = newBoard
-                            ))
-                        )
-                    else
-                        throw IllegalMoveException("You can't play a card you don't have")
+        // if gameIsOver(state) then
+        //     throw IllegalMoveException("Accept your defeat, the game is over")
+        // else if isTurnOf(userId, ???) then
+        event match
+            case Event.PlayCard(card) =>
+                if cardsInHand.contains(card) then
+                    val newBoard: Board = board.updated(
+                        userId, board.get(userId).get.appended(card)
+                    )
+                    val newHands: Map[UserId, Hand] = hands.updated(
+                        userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                    )
+                    Seq(
+                        Render(state.copy(
+                            hands = newHands,
+                            board = newBoard
+                        ))
+                    )
+                else
+                    throw IllegalMoveException("You can't play a card you don't have")
 
-                case Event.Discard(card) =>
-                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
-                        throw IllegalMoveException("You haven't picked a card yet")
-                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
-                        val newHands: Map[UserId, Hand] = hands.updated(
-                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
-                        )
-                        Seq(
-                            Render(state.copy(
-                                hands = newHands,
-                                cardPiles = cardPiles.discard(card)
-                            ))
-                        )
-                    else 
-                        throw IllegalStateException(
-                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
-                        )
+            case Event.Discard(card) =>
+                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                    throw IllegalMoveException("You haven't picked a card yet")
+                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                    val newHands: Map[UserId, Hand] = hands.updated(
+                        userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                    )
+                    Seq(
+                        Render(state.copy(
+                            hands = newHands,
+                            cardPiles = cardPiles.discard(card)
+                        ))
+                    )
+                else 
+                    throw IllegalStateException(
+                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                    )
 
-                case Event.PickCard(isDefaultPile) =>
-                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
-                        cardPiles.pickCard(isDefaultPile) match
-                            case Some((card, updatedCardPiles)) => 
-                                Seq(
-                                    Render(state.copy(
-                                        hands = hands.updated(userId, cardsInHand.appended(card)),
-                                        cardPiles = updatedCardPiles
-                                    ))
-                                )
-                            case None =>
-                                throw IllegalMoveException("You can't pick a card from an empty pile")
-                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
-                        throw IllegalMoveException("You can't pick a card, you already did")
-                    else 
-                        throw IllegalStateException(
-                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
-                        )
-        else
-            throw IllegalMoveException("Not your turn to play")
+            case Event.PickCard(isDefaultPile) =>
+                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                    cardPiles.pickCard(isDefaultPile) match
+                        case Some((card, updatedCardPiles)) => 
+                            Seq(
+                                Render(state.copy(
+                                    hands = hands.updated(userId, cardsInHand.appended(card)),
+                                    cardPiles = updatedCardPiles
+                                ))
+                            )
+                        case None =>
+                            throw IllegalMoveException("You can't pick a card from an empty pile")
+                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                    throw IllegalMoveException("You can't pick a card, you already did")
+                else 
+                    throw IllegalStateException(
+                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                    )
+        // else
+        //     throw IllegalMoveException("Not your turn to play")
 
                 
         
@@ -105,14 +106,12 @@ class Logic extends StateMachine[Event, State, View]:
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles) = state
         if gameIsOver(state) then
-            ???
+            val winner = countSmiles(board).maxBy(_._2)._1
+            View(VictoryView(List(winner)))
         else
             hands.get(userId) match
                 case Some(hand) => 
-                    View(
-                        board = board,
-                        hand = hand    
-                    )
+                    View(GameView(board, hand))
                 case None =>
                     throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
         

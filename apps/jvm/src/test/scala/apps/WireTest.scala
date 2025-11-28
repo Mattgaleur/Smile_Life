@@ -6,6 +6,7 @@ import cs214.webapp.utils.WebappSuite
 
 import scala.util.Random
 import cs214.webapp.server.StateMachine
+import apps.ul2025app68.PhaseView.GameView
 
 class WireTests extends WebappSuite[Event, State, View]:
 
@@ -55,7 +56,7 @@ class WireTests extends WebappSuite[Event, State, View]:
                 yield 
                     (rand.nextString(rand.nextInt(10)),listOfRandomCardsVector(rand.nextInt(nbOfSample)))
             ).toMap
-            View(
+            View(GameView(
                 randomBoard,
                 listOfRandomCardsVector(rand.nextInt(10))
-            ).testViewWire
+            )).testViewWire
