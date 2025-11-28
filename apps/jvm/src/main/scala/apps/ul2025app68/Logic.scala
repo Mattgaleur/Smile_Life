@@ -48,18 +48,25 @@ class Logic extends StateMachine[Event, State, View]:
             event match
                 case Event.PlayCard(card) =>
                     if cardsInHand.contains(card) then
-                        val newBoard: Board = board.updated(
-                            userId, board.get(userId).get.appended(card)
-                        )
-                        val newHands: Map[UserId, Hand] = hands.updated(
-                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
-                        )
-                        Seq(
-                            Render(state.copy(
-                                hands = newHands,
-                                board = newBoard
-                            ))
-                        )
+                        if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                            val newBoard: Board = board.updated(
+                                userId, board.get(userId).get.appended(card)
+                            )
+                            val newHands: Map[UserId, Hand] = hands.updated(
+                                userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
+                            )
+                            Seq(
+                                Render(state.copy(
+                                    hands = newHands,
+                                    board = newBoard
+                                ))
+                            )
+                        else if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                            throw IllegalMoveException("You should draw a card first")
+                        else 
+                            throw IllegalStateException(
+                                f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                            )
                     else
                         throw IllegalMoveException("You can't play a card you don't have")
 
@@ -68,7 +75,7 @@ class Logic extends StateMachine[Event, State, View]:
                         throw IllegalMoveException("You haven't picked a card yet")
                     else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
                         val newHands: Map[UserId, Hand] = hands.updated(
-                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                            userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
                         )
                         Seq(
                             Render(state.copy(
