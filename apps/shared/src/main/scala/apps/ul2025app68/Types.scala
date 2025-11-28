@@ -74,10 +74,12 @@ enum Event:
         // true -> DefaultPile
         // false -> DiscardPile
 
-case class View(
-    board: Board,
-    hand: Hand
-)
+case class View(val phaseView: PhaseView)
+
+enum PhaseView:
+    case GameView(board: Board, hand: Hand)
+    case VictoryView(winners: List[UserId])
+
 
 case class State(
     hands: Map[UserId, Hand],

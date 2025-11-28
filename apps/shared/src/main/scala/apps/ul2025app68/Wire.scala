@@ -3,15 +3,15 @@ package ul2025app68
 
 import cs214.webapp.*
 import cs214.webapp.DecodingException
+import Event.*
+import View.*
+import ujson.*
 
 import scala.util.{Failure, Success, Try}
-import ujson.Value
-import ujson.Obj
+import ul2025app68.PhaseView.*
+
 
 object Wire extends AppWire[Event, View]:
-    import Event.*
-    import View.*
-    import ujson.*
 
     override object eventFormat extends WireFormat[Event]:
         override def encode(event: Event): Value =
@@ -42,18 +42,35 @@ object Wire extends AppWire[Event, View]:
     override object viewFormat extends WireFormat[View]:
         val boardWire = MapWire(StringWire, VectorWire(CardWire))
         val handWire = SeqWire(CardWire)
+        val winnersWire = SeqWire(StringWire)
         override def encode(v: View): Value =
-        v match
-            case View(board, hand) => 
-                Obj(
-                    "board" -> boardWire.encode(board),
-                    "hand" -> handWire.encode(hand)
-                )
+            v.phaseView match
+                case GameView(board: Board, hand: Hand) =>
+                    Obj(
+                        "phaseView" -> "GameView",
+                        "board" -> boardWire.encode(board),
+                        "hand" -> handWire.encode(hand)
+                    )
+                case VictoryView(winners: List[UserId]) =>
+                    Obj(
+                        "phaseView" -> "VictoryView",
+                        "winners" -> winnersWire.encode(winners) 
+                    )
 
+        
         override def decode(json: Value): Try[View] = Try:
-            val board: Board = boardWire.decode(json("board")).get
-            val hand: Hand = handWire.decode(json("hand")).get.toVector
-            View(board,hand)  
+            json("phaseView").str match
+                case "GameView" =>
+                    val board: Board = boardWire.decode(json("board")).get
+                    val hand: Hand = handWire.decode(json("hand")).get.toVector
+                    View(GameView(board,hand))  
+
+                case "VictoryView" =>
+                    val winners: List[UserId] = winnersWire.decode(json("winners")).get.toList
+                    View(VictoryView(winners))
+
+                
+            
             
 
 object CardWire extends WireFormat[Card]:
