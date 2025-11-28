@@ -214,5 +214,5 @@ def isTurnOf(userId: UserId, state: State): Boolean =
 //add documentation
 def gameIsOver(state: State): Boolean =
     val cardPiles = state.cardPiles //get the draw and discard piles from the state
-    cardPiles.isEmpty
+    cardPiles.drawPileIsEmpty
     

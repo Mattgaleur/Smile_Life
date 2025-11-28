@@ -64,7 +64,7 @@ case class CardPiles(
             case _ => 
                 false
     
-    def DrawPileIsEmpty: Boolean = 
+    def drawPileIsEmpty: Boolean = 
         defaultPile.isEmpty
             
         
