@@ -7,7 +7,7 @@ import scalatags.JsDom.all.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-@JSExportTopLevel("ul2025app68")
+@JSExportTopLevel("ul2025app68_Text")
 object TextUI extends WSClientApp:
   def appId: String = "ul2025app68"
   def uiId: String = "text"
@@ -20,7 +20,7 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     extends graphics.TextClientAppInstance[Event, View](userId, sendMessage, target):
     
     override val wire = apps.ul2025app68.Wire
-    
+
     override def renderView(userId: UserId, view: View): Vector[TextSegment] =
 
         view.phaseView match
@@ -34,9 +34,9 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             playedHand = view.board(player)
             cards = playedHand.map(card => card.toString)
 
-            title = TextSegment("This is " + player + "'s cards")
+            title = TextSegment("This is " + player + "'s placed cards")
             space = TextSegment("\n")
-            hand = TextSegment("(" + cards.mkString(", ") + ")")
+            hand = TextSegment("(" + cards.mkString(", ") + ")\n")
             vector = Vector(title,space,hand,space,space)
         } yield vector
 
@@ -44,7 +44,7 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     
     def handView(player: UserId, view: PhaseView.GameView): Vector[TextSegment] =
         Vector(
-            TextSegment("this is your hand"),
+            TextSegment("this is your hand\n"),
             TextSegment("\n"),
             TextSegment("(" + view.hand.map(card => card.toString).mkString(", ") + ")"),
             TextSegment("\n\n")
@@ -65,9 +65,9 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                         case "trash" => Option(Event.PickCard(false))
                         case _ => throw new Exception("unknown command")
             
-                    case "play" => if 0 <= input(1).toInt && input(1).toInt <= 5 then Option(Event.PlayCard(gv.hand(input(1).toInt)))
+                    case "play" => if 1 <= input(1).toInt && input(1).toInt <= 6 then Option(Event.PlayCard(gv.hand(input(1).toInt-1)))
                         else throw new Exception("unknown card index")
-                    case "discard" => if 0 <= input(1).toInt && input(1).toInt <= 5 then Option(Event.Discard(gv.hand(input(1).toInt)))
+                    case "discard" => if 1 <= input(1).toInt && input(1).toInt <= 6 then Option(Event.Discard(gv.hand(input(1).toInt-1)))
                         else throw new Exception("unknown card index")
 
                     case _ => throw new Exception("unknown command")
