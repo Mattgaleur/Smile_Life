@@ -132,7 +132,14 @@ class Logic extends StateMachine[Event, State, View]:
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
-    val defaultPile: Pile = ??? // Pour toi Coco ;)
+    val allCards = Card.values
+    val defaultPile: Pile =  // Pour toi Coco ;)
+        List.fill(size) {
+            val i = rand.between(0, allCards.length) 
+            //pour chaque value de card possible (Flirt, Child, Money,..) on associe un Int
+            allCards(i)
+            //on fill une pile (List[Card]) avec une card du type associé au Int(index i) ex: 0: Flirt, 1: Child etc..
+        }
     CardPiles(defaultPile, List.empty)
 
 
@@ -165,7 +172,7 @@ def countSmiles(board: Board): Map[UserId, Int] =
   *   A Map associating each player with their number of points.
   */
 def countSmiles(board: Board, userId: UserId): Int =
-    ??? // Pour toi Coco ;)
+    // Pour toi Coco ;)
     // mon idée pour la version 1 qui sera très simplifier:
         // Flirt => +1 
         // Child => +3
@@ -175,7 +182,28 @@ def countSmiles(board: Board, userId: UserId): Int =
         // Pet => +2
         // Malus => -1 à tous les autres joueur
         // Special => +1
+    
+    val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
 
+    val baseScore = 
+        myCards.foldLeft(0) {
+            case (acc, Card.Flirt) => acc + 1
+            case (acc, Card.Child) => acc + 3
+            case (acc, Card.Money) => acc
+            case (acc, Card.Profession) => acc 
+            case (acc, Card.Study) => acc 
+            case (acc, Card.Pet) => acc + 2
+            case (acc, Card.Special) => acc + 1
+            case (acc, _) => acc
+        }
+    
+    val malusAgainstMe =
+        board.iterator
+            .filter((otherId, _) => otherId != userId)  
+            .map { case (_, cards) => cards.count(_ == Card.Malus) } //compte le nombre de carte malus
+            .sum
+
+    baseScore - malusAgainstMe
 
 def isTurnOf(userId: UserId, somethingToCheck: Any): Boolean =
     ??? // Pour toi Coco, faudra que tu changes State je pense :D
