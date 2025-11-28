@@ -13,6 +13,7 @@ import cs214.webapp.Action.Render
 import apps.ul2025app68.Card.*
 
 given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
+val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
 
 class Logic extends StateMachine[Event, State, View]:
     val appInfo: AppInfo = AppInfo(
@@ -36,44 +37,84 @@ class Logic extends StateMachine[Event, State, View]:
 
     override def transition(state: State)(userId: UserId, event: Event): Try[Seq[Action[State]]] = Try:
         val State(hands, board, cardPiles) = state
-        event match
-            case Event.Discard(card) =>
-                val cardInHand: Vector[Card] = hands.get(userId).get  
-                if cardInHand.length == MIN_NUMBER_OF_CARD_IN_HAND then
-                    throw IllegalMoveException("You haven't picked a card yet")
-                else if cardInHand.length < MIN_NUMBER_OF_CARD_IN_HAND then
-                    throw IllegalStateException(
-                        f"Impossible situation happened: you have less cards than ${MIN_NUMBER_OF_CARD_IN_HAND} cards"
-                    )
-                else 
-                    val newHands: Map[UserId, Hand] = hands.updated(
-                        userId, cardInHand.drop(cardInHand.indexOf(card))
-                    )
-                    Seq(
-                        Render(state.copy(
-                            hands = newHands,
-                            cardPiles = cardPiles.discard(card)
-                        ))
-                    )
-            case Event.PlayCard(card) =>
-                ???
-            case Event.PickCard(isDefaultPile) =>
-                if isDefaultPile then
-                    ???
-                else 
-                    ???
+        val cardsInHand: Vector[Card] = hands.get(userId).get  
+        val nbOfCardsInHands: Int = cardsInHand.length
+        if gameIsOver(state) then
+            throw IllegalMoveException("Accept your defeat, the game is over")
+        else if isTurnOf(userId, ???) then
+            event match
+                case Event.PlayCard(card) =>
+                    if cardsInHand.contains(card) then
+                        val newBoard: Board = board.updated(
+                            userId, board.get(userId).get.appended(card)
+                        )
+                        val newHands: Map[UserId, Hand] = hands.updated(
+                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                        )
+                        Seq(
+                            Render(state.copy(
+                                hands = newHands,
+                                board = newBoard
+                            ))
+                        )
+                    else
+                        throw IllegalMoveException("You can't play a card you don't have")
+
+                case Event.Discard(card) =>
+                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                        throw IllegalMoveException("You haven't picked a card yet")
+                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                        val newHands: Map[UserId, Hand] = hands.updated(
+                            userId, cardsInHand.drop(cardsInHand.indexOf(card))
+                        )
+                        Seq(
+                            Render(state.copy(
+                                hands = newHands,
+                                cardPiles = cardPiles.discard(card)
+                            ))
+                        )
+                    else 
+                        throw IllegalStateException(
+                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                        )
+
+                case Event.PickCard(isDefaultPile) =>
+                    if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                        cardPiles.pickCard(isDefaultPile) match
+                            case Some((card, updatedCardPiles)) => 
+                                Seq(
+                                    Render(state.copy(
+                                        hands = hands.updated(userId, cardsInHand.appended(card)),
+                                        cardPiles = updatedCardPiles
+                                    ))
+                                )
+                            case None =>
+                                throw IllegalMoveException("You can't pick a card from an empty pile")
+                    else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                        throw IllegalMoveException("You can't pick a card, you already did")
+                    else 
+                        throw IllegalStateException(
+                            f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
+                        )
+        else
+            throw IllegalMoveException("Not your turn to play")
+
+                
         
 
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles) = state
-        hands.get(userId) match
-            case Some(hand) => 
-                View(
-                    board = board,
-                    hand = hand    
-                )
-            case None =>
-                throw IllegalArgumentException(f"The given userId ${userId} is unkown")
+        if gameIsOver(state) then
+            ???
+        else
+            hands.get(userId) match
+                case Some(hand) => 
+                    View(
+                        board = board,
+                        hand = hand    
+                    )
+                case None =>
+                    throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
         
 
 /** 
@@ -125,7 +166,6 @@ def countSmiles(board: Board): Map[UserId, Int] =
   */
 def countSmiles(board: Board, userId: UserId): Int =
     ??? // Pour toi Coco ;)
-
     // mon idée pour la version 1 qui sera très simplifier:
         // Flirt => +1 
         // Child => +3
@@ -135,3 +175,10 @@ def countSmiles(board: Board, userId: UserId): Int =
         // Pet => +2
         // Malus => -1 à tous les autres joueur
         // Special => +1
+
+
+def isTurnOf(userId: UserId, somethingToCheck: Any): Boolean =
+    ??? // Pour toi Coco, faudra que tu changes State je pense :D
+
+def gameIsOver(state: State): Boolean =
+    ??? // (☞ﾟヮﾟ)☞ Pour toi Coco, moi je connais pas les règles 
