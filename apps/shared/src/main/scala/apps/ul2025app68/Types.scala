@@ -1,6 +1,7 @@
 package apps.ul2025app68
 
 import cs214.webapp.UserId
+import scala.collection.mutable.Queue
 
 enum Card:
     case Flirt
@@ -88,5 +89,5 @@ case class State(
     hands: Map[UserId, Hand],
     board: Board, 
     cardPiles: CardPiles,
-    currentPlayerTurn: UserId
+    playerQueue: Queue[UserId]
 )

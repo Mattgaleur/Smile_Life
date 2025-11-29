@@ -12,6 +12,7 @@ import cs214.webapp.IllegalMoveException
 import cs214.webapp.Action.Render
 import apps.ul2025app68.Card.*
 import apps.ul2025app68.PhaseView.*
+import scala.collection.mutable.Queue
 
 given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
 val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
@@ -30,21 +31,21 @@ class Logic extends StateMachine[Event, State, View]:
         val cardPiles: CardPiles = setPiles()
         val (hands, updatedCardPiles) = cardPiles.giveCardsTo(clients)
         val board: Board = clients.map((_, Vector.empty)).toMap
-        val firstPlayer: UserId = clients.head 
+        val playerQueue: Queue[UserId] = Queue.from(clients) 
         State(
             hands = hands, 
             board = board, 
             cardPiles = updatedCardPiles,
-            currentPlayerTurn = firstPlayer
+            playerQueue = playerQueue
         )
 
     override def transition(state: State)(userId: UserId, event: Event): Try[Seq[Action[State]]] = Try:
-        val State(hands, board, cardPiles, currentPlayerTurn) = state
+        val State(hands, board, cardPiles, playerQueue) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
         if gameIsOver(state) then
             throw IllegalMoveException("Accept your defeat, the game is over")
-        else if isTurnOf(userId, state) then
+        else if isTurnOf(userId, playerQueue) then
             event match
                 case Event.PlayCard(card) =>
                     if cardsInHand.contains(card) then
@@ -58,7 +59,8 @@ class Logic extends StateMachine[Event, State, View]:
                             Seq(
                                 Render(state.copy(
                                     hands = newHands,
-                                    board = newBoard
+                                    board = newBoard,
+                                    playerQueue = toNextPlayer(playerQueue)
                                 ))
                             )
                         else if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
@@ -80,7 +82,8 @@ class Logic extends StateMachine[Event, State, View]:
                         Seq(
                             Render(state.copy(
                                 hands = newHands,
-                                cardPiles = cardPiles.discard(card)
+                                cardPiles = cardPiles.discard(card),
+                                playerQueue = toNextPlayer(playerQueue)
                             ))
                         )
                     else 
@@ -113,7 +116,7 @@ class Logic extends StateMachine[Event, State, View]:
         
 
     override def project(state: State)(userId: UserId): View = 
-        val State(hands, board, cardPiles, currentPlayerTurn) = state
+        val State(hands, board, cardPiles, playerQueue) = state
         if gameIsOver(state) then
             val winner = countSmiles(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
@@ -215,11 +218,18 @@ def countSmiles(board: Board, userId: UserId): Int =
 
 
 // add documentation
-def isTurnOf(userId: UserId, state: State): Boolean =
-    state.currentPlayerTurn == userId 
+def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
+    playerQueue.head == userId
+
 
 //add documentation
 def gameIsOver(state: State): Boolean =
+    // change to Paramètre, met qq chose de plus précis que state
     val cardPiles = state.cardPiles //get the draw and discard piles from the state
     cardPiles.drawPileIsEmpty
+
+def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
+    // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
+    // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
+    playerQueue // <-- change ça 
     
