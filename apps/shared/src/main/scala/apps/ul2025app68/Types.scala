@@ -6,12 +6,12 @@ import scala.collection.mutable.Queue
 enum Card:
     case Flirt
     case Child
-    case Money(amount: Int)
-    case Profession(studyRequired: Int, salary: Int)
     case Study
     case Pet
     case Malus
     case Special
+    case Money(amount: Int)
+    case Profession(studyRequired: Int, salary: Int)
 
     def canBePlaced(playedHand: PlayedHand): Boolean =
         this match
@@ -23,13 +23,13 @@ enum Card:
             case Profession(studyRequired, salary) =>
                 val enoughStudy = playedHand.count(_ == Study) >= studyRequired
                 val isJobLess = !playedHand.exists: // Maybe do an extension for PlayedHand
-                    case Profession => true
+                    case p: Profession => true
                     case _ => false 
                 isJobLess && enoughStudy
 
             case Study =>
                 !playedHand.exists: 
-                    case Profession => true
+                    case p: Profession => true
                     case _ => false
 
             // case Flirt => 
@@ -38,7 +38,6 @@ enum Card:
             // case Malus =>
             // case Special =>
             case _ => true
-        
 
 
 type Hand = Vector[Card]

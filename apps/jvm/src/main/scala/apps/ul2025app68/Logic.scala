@@ -43,14 +43,15 @@ class Logic extends StateMachine[Event, State, View]:
         val State(hands, board, cardPiles, playerQueue) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
+        val playerHand: PlayedHand = board.get(userId).get
         if gameIsOver(state) then
             throw IllegalMoveException("Accept your defeat, the game is over")
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
         else event match
-            case Event.PlayCard(card) =>
-                if !cardsInHand.contains(card) then
-                    throw IllegalMoveException("You can't play a card you don't have")
+            case Event.PlayCard(card: Card) =>
+                if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
+                    throw IllegalMoveException("You can't play this card")
 
                 else if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
                     throw IllegalMoveException("You should draw a card first")
@@ -144,15 +145,16 @@ class Logic extends StateMachine[Event, State, View]:
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
-    val allCards = Card.values // all possibles card types from the Card enum
-    val defaultPile: Pile =  
-        List.fill(size) { //fill a list of size = input parameter "size"
-            val i = rand.between(0, allCards.length) 
-            //pick a random index between 0 and the number of different types of Card
-            allCards(i)
-            //we fill the pile with the random card type selected, ex: 0=>Flirt, 1=>Child, etc...
-        }
-    CardPiles(defaultPile, List.empty) //return a CardPile with our random draw pile and an empty discard pile
+    ???
+    // val allCards = Card.values // all possibles card types from the Card enum
+    // val defaultPile: Pile =  
+    //     List.fill(size) { //fill a list of size = input parameter "size"
+    //         val i = rand.between(0, allCards.length) 
+    //         //pick a random index between 0 and the number of different types of Card
+    //         allCards(i)
+    //         //we fill the pile with the random card type selected, ex: 0=>Flirt, 1=>Child, etc...
+    //     }
+    // CardPiles(defaultPile, List.empty) //return a CardPile with our random draw pile and an empty discard pile
 
 
 /** 

@@ -9,6 +9,7 @@ import ujson.*
 
 import scala.util.{Failure, Success, Try}
 import ul2025app68.PhaseView.*
+import ul2025app68.Card.*
 
 
 object Wire extends AppWire[Event, View]:
@@ -80,10 +81,41 @@ object Wire extends AppWire[Event, View]:
             
 
 object CardWire extends WireFormat[Card]:
-    override def encode(t: Card): Value = 
-        IntWire.encode(t.ordinal)
+    override def encode(card: Card): Value = 
+        val attributes = card match
+            case Money(amount) =>
+                Obj(
+                    "amount" -> IntWire.encode(amount)
+                )
+            case Profession(studyRequired, salary) =>
+                Obj(
+                    "studyRequired" -> IntWire.encode(studyRequired),
+                    "salary" -> IntWire.encode(salary)
+                )
+            // case Study =>
+            // case Flirt => 
+            // case Child =>
+            // case Pet =>
+            // case Malus =>
+            // case Special =>
+            case _ => Obj()
+        
+        Obj("card" -> card.productPrefix, "attributes" -> attributes)
 
     override def decode(json: Value): Try[Card] = Try:
-        Card.fromOrdinal(
-            IntWire.decode(json).get
-        )
+        json("card").str match
+            case "Money" =>
+                val amount: Int = IntWire.decode(json("attributes")("amount")).get
+                Money(amount)
+
+            case "Profession" =>
+                val studyRequired = IntWire.decode(json("attributes")("studyRequired")).get
+                val salary = IntWire.decode(json("attributes")("salary")).get
+                Profession(studyRequired, salary)
+
+            case "Study" => Study
+            case "Flirt" => Flirt
+            case "Child" => Child
+            case "Pet" => Pet
+            case "Malus" => Malus
+            case "Special" => Special
