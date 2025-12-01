@@ -24,8 +24,8 @@ type Board = Map[UserId, PlayedHand]
 type Pile = List[Card] // Maybe setting Pile as a mutable class would make things simpler
 
 case class CardPiles(
-    private val defaultPile: Pile,
-    private val trashPile: Pile
+    val defaultPile: Pile,
+    val trashPile: Pile
 ) {
     def discard(card: Card): CardPiles =
         this.copy(
