@@ -6,12 +6,39 @@ import scala.collection.mutable.Queue
 enum Card:
     case Flirt
     case Child
-    case Money
-    case Profession
+    case Money(amount: Int)
+    case Profession(studyRequired: Int, salary: Int)
     case Study
     case Pet
     case Malus
     case Special
+
+    def canBePlaced(playedHand: PlayedHand): Boolean =
+        this match
+            case Money(amount) =>
+                playedHand.collectFirst {case p: Profession => p } match
+                    case Some(profession) => profession.salary >= amount 
+                    case None => false
+                
+            case Profession(studyRequired, salary) =>
+                val enoughStudy = playedHand.count(_ == Study) >= studyRequired
+                val isJobLess = !playedHand.exists: // Maybe do an extension for PlayedHand
+                    case Profession => true
+                    case _ => false 
+                isJobLess && enoughStudy
+
+            case Study =>
+                !playedHand.exists: 
+                    case Profession => true
+                    case _ => false
+
+            // case Flirt => 
+            // case Child =>
+            // case Pet =>
+            // case Malus =>
+            // case Special =>
+            case _ => true
+        
 
 
 type Hand = Vector[Card]
@@ -47,14 +74,12 @@ case class CardPiles(
             None
     
     def giveCardsTo(clients: Seq[UserId])(using nbOfCards: Int): (Map[UserId, Hand], CardPiles) =
-        val hands: Map[UserId, Hand] = clients.zipWithIndex.map((id, index) =>
-            (
-                id, 
-                defaultPile  // Isn't there a better way than to do the following ?
-                    .take((index + 1) * nbOfCards)
-                    .drop(index * nbOfCards).toVector
-            )
-        ).toMap 
+        val hands: Map[UserId, Hand] =
+            clients
+                .zip(defaultPile.grouped(nbOfCards))   // gives (userId, cards)
+                .map { case (id, cards) => id -> cards.toVector }
+                .toMap
+
         val piles: CardPiles = CardPiles(defaultPile.drop(clients.length * nbOfCards), List.empty)
         (hands, piles)
 
