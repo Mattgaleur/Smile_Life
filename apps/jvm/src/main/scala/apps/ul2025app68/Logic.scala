@@ -126,7 +126,7 @@ class Logic extends StateMachine[Event, State, View]:
             case None =>
                 throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
             case Some(hand) => 
-                View(GameView(board, hand))
+                View(GameView(board, hand, cardPiles.trashPile.head, playerQueue.head, cardPiles.defaultPile.length))
         
 
 /** 

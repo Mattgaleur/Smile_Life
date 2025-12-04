@@ -45,16 +45,19 @@ object Wire extends AppWire[Event, View]:
         val winnersWire = SeqWire(StringWire)
         override def encode(v: View): Value =
             v.phaseView match
-                case GameView(board: Board, hand: Hand) =>
+                case GameView(board: Board, hand: Hand, lastDiscard: Card, turnOf: UserId, drawPileSize: Int) =>
                     Obj(
-                        "phaseView" -> "GameView",
-                        "board" -> boardWire.encode(board),
-                        "hand" -> handWire.encode(hand)
+                        "phaseView"    -> "GameView",
+                        "board"        -> boardWire.encode(board),
+                        "hand"         -> handWire.encode(hand),
+                        "lastDiscard"  -> CardWire.encode(lastDiscard), 
+                        "turnOf"       -> StringWire.encode(turnOf),
+                        "drawPileSize" -> IntWire.encode(drawPileSize)
                     )
                 case VictoryView(winners: List[UserId]) =>
                     Obj(
                         "phaseView" -> "VictoryView",
-                        "winners" -> winnersWire.encode(winners) 
+                        "winners"   -> winnersWire.encode(winners) 
                     )
 
         
@@ -63,7 +66,10 @@ object Wire extends AppWire[Event, View]:
                 case "GameView" =>
                     val board: Board = boardWire.decode(json("board")).get
                     val hand: Hand = handWire.decode(json("hand")).get.toVector
-                    View(GameView(board,hand))  
+                    val lastDiscard: Card = CardWire.decode(json("lastDiscard")).get
+                    val turnOf: UserId = StringWire.decode(json("turnOf")).get
+                    val drawPileSize: Int = IntWire.decode(json("drawPileSize")).get
+                    View(GameView(board,hand,lastDiscard,turnOf,drawPileSize))  
 
                 case "VictoryView" =>
                     val winners: List[UserId] = winnersWire.decode(json("winners")).get.toList
