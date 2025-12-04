@@ -30,13 +30,19 @@ enum Card:
             case Study =>
                 !playedHand.exists: 
                     case p: Profession => true
-                    case _ => false
+                    case _ => playedHand.count(_ == Study) >= 6
 
-            // case Flirt => 
-            // case Child =>
-            // case Pet =>
-            // case Malus =>
-            // case Special =>
+            case Flirt => 
+                playedHand.count(_ == Flirt) < 5
+                // need to add extra condition if we add divorce
+
+            case Child => true // On n'a pas de cartes marriages
+
+            case Pet => true
+
+            case Malus => true // (on ne s'est pas décidé comment faire les effets)
+
+            case Special => true // (on ne s'est pas décidé comment faire les effets)
             case _ => true
 
 
