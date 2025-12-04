@@ -22,11 +22,19 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     override val wire = apps.ul2025app68.Wire
 
     override def renderView(userId: UserId, view: View): Vector[TextSegment] =
-
         view.phaseView match
-            case gv: PhaseView.GameView => boardView(gv) ++ handView(userId,gv)
+            case gv: PhaseView.GameView => 
+                trashView(gv) ++ turnView(userId, gv) ++ boardView(gv) ++ handView(userId,gv)
             case vv: PhaseView.VictoryView => victoryView(vv)
         
+    def trashView(view: PhaseView.GameView): Vector[TextSegment] = 
+        if view.lastDiscard == Card.Special then Vector(TextSegment("There are not cards in the trash."))
+        //need to change later
+            else Vector(TextSegment("Last trashed card was : " + view.lastDiscard.toString))
+    
+    def turnView(userId: UserId, view: PhaseView.GameView): Vector[TextSegment] =
+        if view.turnOf == userId then Vector(TextSegment("This is your turn."))
+            else Vector(TextSegment("This is " + view.turnOf + "'s turn."))
     
     def boardView(view: PhaseView.GameView): Vector[TextSegment] =
         val l = for{
@@ -38,7 +46,7 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             space = TextSegment("\n")
             hand = TextSegment("(" + cards.mkString(", ") + ")\n")
             vector = Vector(title,space,hand,space,space)
-        } yield vector
+        } yield Vector(TextSegment("it is "), TextSegment("\n"))++ vector
 
         l.flatten.toVector
     

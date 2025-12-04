@@ -126,7 +126,8 @@ class Logic extends StateMachine[Event, State, View]:
             case None =>
                 throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
             case Some(hand) => 
-                View(GameView(board, hand, cardPiles.trashPile.head, playerQueue.head, cardPiles.defaultPile.length))
+                val lastDiscard = if cardPiles.trashPile.isEmpty then Special else cardPiles.trashPile.head // TEMPORARY eventuellement ajouter un type null?
+                View(GameView(board, hand, lastDiscard, playerQueue.head, cardPiles.defaultPile.length))
         
 
 /** 
@@ -184,16 +185,18 @@ def countSmiles(board: Board): Map[UserId, Int] =
   *   A Map associating each player with their number of points.
   */
 def countSmiles(board: Board, userId: UserId): Int =
-    // Pour toi Coco ;)
-    // mon idée pour la version 1 qui sera très simplifier:
-        // Flirt => +1 
-        // Child => +3
-        // Money => +0
-        // Profession => +0
-        // Study => +0
-        // Pet => +2
-        // Malus => -1 à tous les autres joueur
-        // Special => +1
+    def SmileValue(card: Card): Int =
+        card match
+            case Flirt => 1
+            case Child => 2
+            case Money => 1
+            case Profession => 2
+            case Study => 1
+            case Pet => 1
+            case Malus => -1
+            case Special => +1
+        
+    board(userId).map(SmileValue).sum
     
     val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
     //get playedHands of the required player
@@ -230,7 +233,8 @@ def gameIsOver(state: State): Boolean =
     cardPiles.drawPileIsEmpty
 
 def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
-    // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
-    // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
-    playerQueue // <-- change ça 
+    val next = playerQueue.dequeue()
+    val newQueue = Queue.from(playerQueue)  // copy remaining players
+    newQueue.enqueue(next)
+    newQueue
     
