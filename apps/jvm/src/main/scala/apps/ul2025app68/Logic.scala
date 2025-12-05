@@ -145,7 +145,20 @@ class Logic extends StateMachine[Event, State, View]:
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
-    ???
+    val defaultPile: Pile = 
+        List.fill(size){
+            val i = rand.between(0, Card.values.length)
+            i match
+                case 0 => Flirt
+                case 1 => Child
+                case 2 => Study
+                case 3 => Pet
+                case 4 => Malus
+                case 5 => Special
+                case 6 => Money(rand.between(1,5))
+                case 7 => Profession(rand.between(1,7),rand.between(1,5))
+        } 
+    CardPiles(defaultPile, List.empty)
     // val allCards = Card.values // all possibles card types from the Card enum
     // val defaultPile: Pile =  
     //     List.fill(size) { //fill a list of size = input parameter "size"
