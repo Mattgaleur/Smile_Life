@@ -124,6 +124,90 @@ class LogicTests extends WebappSuite[Event, State, View]:
             assertFailure[IllegalMoveException]:
                 sm.transition(initState)(userId, PickCard(true))
 
+
+    // ## CARD RULES TESTS: Money & Profession ################################
+
+    test("Money.canBePlaced: true when there is a profession with sufficient salary") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study,                      // irrelevant for Money.canBePlaced
+                Profession(studyRequired = 1, salary = 4)
+            )
+
+        val card = Money(3) // amount <= salary (3 <= 4)
+
+        assert(card.canBePlaced(playedHand),
+            "Money(3) should be placeable when a Profession with salary 4 is present")
+    }
+
+    test("Money.canBePlaced: false when no profession is present") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study,
+                Study,
+                Pet
+            )
+
+        val card = Money(2)
+
+        assert(!card.canBePlaced(playedHand),
+            "Money should not be placeable when no Profession is present")
+    }
+
+    test("Money.canBePlaced: false when profession salary is too low") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study,
+                Profession(studyRequired = 1, salary = 2)
+            )
+
+        val card = Money(3) // amount > salary (3 > 2)
+
+        assert(!card.canBePlaced(playedHand),
+            "Money(3) should NOT be placeable when the only Profession has salary 2")
+    }
+
+    test("Profession.canBePlaced: true when enough Study and no existing Profession") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study,
+                Study,
+                Study
+            )
+
+        val card = Profession(studyRequired = 2, salary = 4)
+
+        assert(card.canBePlaced(playedHand),
+            "Profession(2,5) should be placeable with 3 Study cards and no existing Profession")
+    }
+
+    test("Profession.canBePlaced: false when not enough Study") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study // only 1 Study
+            )
+
+        val card = Profession(studyRequired = 2, salary = 5)
+
+        assert(!card.canBePlaced(playedHand),
+            "Profession(2,5) should NOT be placeable with only 1 Study card")
+    }
+
+    test("Profession.canBePlaced: false when there is already a Profession") {
+        val playedHand: PlayedHand =
+            Vector(
+                Study,
+                Study,
+                Profession(studyRequired = 1, salary = 3)
+            )
+
+        val card = Profession(studyRequired = 2, salary = 6)
+
+        assert(!card.canBePlaced(playedHand),
+            "A second Profession should NOT be placeable when one Profession is already in the played hand")
+    }
+
+
     // ## END OF GAME TESTS
 
     // I don't really know how the games ends so I let it to you
