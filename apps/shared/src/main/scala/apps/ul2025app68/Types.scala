@@ -43,7 +43,7 @@ enum Card:
             case Malus => true // (on ne s'est pas décidé comment faire les effets)
 
             case Special => true // (on ne s'est pas décidé comment faire les effets)
-            case _ => true
+
 
 
 type Hand = Vector[Card]
