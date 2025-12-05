@@ -147,7 +147,7 @@ class Logic extends StateMachine[Event, State, View]:
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
     val defaultPile: Pile = 
         List.fill(size){
-            val i = rand.between(0, Card.values.length)
+            val i = rand.between(0, 7)
             i match
                 case 0 => Flirt
                 case 1 => Child
