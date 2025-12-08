@@ -30,11 +30,14 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     def trashView(view: PhaseView.GameView): Vector[TextSegment] = 
         if view.lastDiscard == Card.Special then Vector(TextSegment("There are not cards in the trash."))
         //need to change later
-            else Vector(TextSegment("Last trashed card was : " + view.lastDiscard.toString))
+            else Vector(TextSegment("Last trashed card was : " + view.lastDiscard.toString),
+            TextSegment("\n"))
     
     def turnView(userId: UserId, view: PhaseView.GameView): Vector[TextSegment] =
-        if view.turnOf == userId then Vector(TextSegment("This is your turn."))
-            else Vector(TextSegment("This is " + view.turnOf + "'s turn."))
+        if view.turnOf == userId then Vector(TextSegment("This is your turn."),
+            TextSegment("\n"))
+            else Vector(TextSegment("This is " + view.turnOf + "'s turn."),
+                TextSegment("\n"))
     
     def boardView(view: PhaseView.GameView): Vector[TextSegment] =
         val l = for{
@@ -46,7 +49,7 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             space = TextSegment("\n")
             hand = TextSegment("(" + cards.mkString(", ") + ")\n")
             vector = Vector(title,space,hand,space,space)
-        } yield Vector(TextSegment("it is "), TextSegment("\n"))++ vector
+        } yield vector
 
         l.flatten.toVector
     
