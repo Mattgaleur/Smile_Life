@@ -91,3 +91,16 @@ case class State(
     cardPiles: CardPiles,
     playerQueue: Queue[UserId]
 )
+
+case class PlayerBoard(
+    flirt: Int,
+    child: Int,
+    money: Seq[Card],
+    profession: Option[Card],
+    study: Int,
+    pet: Int,
+    malus: Seq[Card],
+    special: Seq[Card]
+)
+
+type FullBoard = Map[UserId, PlayerBoard]
