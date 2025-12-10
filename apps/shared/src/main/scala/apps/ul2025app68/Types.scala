@@ -31,7 +31,8 @@ enum Card:
     case Pet
     case MalusCard(malus: Malus)
     case House(price: Int)
-    case Special(bonus: Bonus)
+    case Travel(price: Int)
+    case Special(bonus: Bonus, name: String)
     case Money(amount: Int, used: Boolean = false)
     case Profession(studyRequired: Int, salary: Int, bonus: Option[List[Bonus]] = None, name: String)
 
@@ -49,41 +50,60 @@ enum Card:
                 isJobLess && enoughStudy
 
             case Study =>
-                !playedHand.exists: 
+                (playedHand.count(_ == Study) < 6) && !playedHand.exists: 
                     case p: Profession => true
-                    case _ => playedHand.count(_ == Study) >= 6
+                    case _ => false
 
             case Flirt => 
                 playedHand.forall(_ != Marriage)
                 
+            case Marriage => 
+                playedHand.exists(_ == Flirt)
 
             case Child => 
                 playedHand.exists(_ == Marriage)
 
-            case Pet => true
-
-            case MalusCard(malus) => !playedHand.hasBonus(Bonus.MalusProtection(malus))
+            case MalusCard(malus) => 
+                def hasNoProtection = !playedHand.hasBonus(Bonus.MalusProtection(malus))
+                def canApply = malus match
+                    case Malus.Disease => true
+                    case Malus.Accident => true
+                    case Malus.BurnOut => playedHand.exists {case p: Profession => true}
+                    case Malus.Tax => playedHand.exists {case m: Money => true}
+                    case Malus.Divorce => playedHand.exists(_ == Marriage)
+                    case Malus.Dismissal => playedHand.exists {case p: Profession => true}
+                    case Malus.TerroristAttack => playedHand.exists(_ == Child)
+                    case Malus.RepeatYear => playedHand.exists(_ == Study)
                 
+                hasNoProtection && canApply
 
-            
+            case Pet => true
+                
+            case Special(bonus) => true
 
-            // case Malus => true // (on ne s'est pas décidé comment faire les effets)
+            case House(price) => 
+                def hasBonus = playedHand.hasBonus(Bonus.FreeHouse)
+                def hasMoney = ???
+                hasBonus || hasMoney
 
-            case _ => true // (on ne s'est pas décidé comment faire les effets)
+            case Travel(price) => 
+                def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
+                def hasMoney = ???
+                hasBonus || hasMoney 
 
+        
 object Card:
     object Profession:
         def unapply(p: Profession): Some[(Int, Int)] =
             Some((p.studyRequired, p.salary))
         
-        // def getEffect(p: Profession): Option[Bonus] =
-        //     p.bonus
-
     object Money:
         def unapply(m: Money): Some[Int] =
             Some(m.amount)
 
-
+    object Special:
+        def unapply(s: Special): Some[Bonus] =
+            Some(s.bonus)
 
 
 type Hand = Vector[Card]
