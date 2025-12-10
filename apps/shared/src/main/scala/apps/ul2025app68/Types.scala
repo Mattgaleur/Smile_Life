@@ -62,7 +62,7 @@ enum Card:
 
             case Pet => true
 
-            case MalusCard(malus) => !playedHand.hasBonus(MalusProtection(malus))
+            case MalusCard(malus) => !playedHand.hasBonus(Bonus.MalusProtection(malus))
                 
 
             
