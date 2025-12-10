@@ -146,20 +146,84 @@ class Logic extends StateMachine[Event, State, View]:
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
 def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
-    val defaultPile: Pile = 
-        List.fill(size){
-            val i = rand.between(0, 7)
-            i match
-                case 0 => Flirt
-                case 1 => Child
-                case 2 => Study
-                case 3 => Pet
-                // case 4 => Malus
-                case 5 => Special
-                case 6 => Money(rand.between(1,5))
-                case 7 => Profession(rand.between(1,7),rand.between(1,5))
-        } 
-    CardPiles(defaultPile, List.empty)
+    val studyCount = 28
+    val moneyCount = 10 // per salary level
+    val flirtCount = 20
+    val marriageCount = 7
+    val childCount = 10
+    val petCount = 5
+    val malusCount = 5 // per malus types
+    val smallHouseCount = 2
+    val mediumHouseCount = 2
+    val bigHouseCount = 1
+    val travelCount = 5
+
+    val professions = List(
+        // 0 studies
+        Card.Profession(0, 1, None, "Stripper"),
+        Card.Profession(0, 1, None, "Waiter"),
+        Card.Profession(0, 1, None, "Writer"),
+        Card.Profession(0, 1, None, "Medium"),
+        Card.Profession(0, 3, None, "Guru"),
+        Card.Profession(0, 2, None, "Pizza maker"),
+        Card.Profession(0, 1, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "Soldier"),
+        Card.Profession(0, 4, Some(List(Bonus.MalusProtection(Malus.Tax),Bonus.MalusProtection(Malus.Dismissal))), "Bandit"),
+        Card.Profession(0, 1, Some(List(Bonus.UnlimitedFlirt)), "Barman"),
+        // 1 studies
+        Card.Profession(1, 1, None, "Gardener"),
+        Card.Profession(1, 1, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "Policeman"),
+        Card.Profession(1, 1, None, "Plumber"),
+        Card.Profession(1, 2, Some(List(Bonus.MalusProtection(Malus.Accident))), "Mechanic"),
+        // 2 studies
+        Card.Profession(2, 2, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "French Teacher"),
+        Card.Profession(2, 2, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "English Teacher"),
+        Card.Profession(2, 2, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "Math Teacher"),
+        Card.Profession(2, 2, Some(List(Bonus.MalusProtection(Malus.Dismissal))), "History Teacher"),
+        // 3 studies
+        Card.Profession(3, 3, None, "Sales manager"),
+        Card.Profession(3, 3, None, "Purchases manager"),
+        Card.Profession(3, 2, None, "Journalist"),
+        // 4 studies
+        Card.Profession(4, 3, None, "Designer"),
+        Card.Profession(4, 3, Some(List(Bonus.FreeHouse)), "Architect"),
+        Card.Profession(4, 3, Some(List(Bonus.MalusProtection(Malus.Divorce))), "Lawyer"),
+        // 5 studies
+        Card.Profession(5, 3, Some(List(Bonus.MalusProtection(Malus.Disease))), "Pharmacist"),
+        Card.Profession(5, 4, Some(List(Bonus.FreeTravel)), "Airline pilot"),
+        // 6 studies
+        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.UnlimitedStudy)), "Doctor"),
+        Card.Profession(6, 2, None, "Researcher"),
+        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.UnlimitedStudy)), "Surgeon"),
+        Card.Profession(6, 4, None, "Astronaut")
+    )
+
+    val pile: List[Card] = List(
+        List.fill(studyCount)(Card.Study),
+        List.fill(moneyCount)(Card.Money(1)),
+        List.fill(moneyCount)(Card.Money(2)),
+        List.fill(moneyCount)(Card.Money(3)),
+        List.fill(moneyCount)(Card.Money(4)),
+        List.fill(marriageCount)(Card.Marriage),
+        List.fill(childCount)(Card.Child),
+        List.fill(petCount)(Card.Pet),
+        List.fill(malusCount)(Card.MalusCard(Malus.Disease)),
+        List.fill(malusCount)(Card.MalusCard(Malus.Accident)),
+        List.fill(malusCount)(Card.MalusCard(Malus.BurnOut)),
+        List.fill(malusCount)(Card.MalusCard(Malus.Tax)),
+        List.fill(malusCount)(Card.MalusCard(Malus.Divorce)),
+        List.fill(malusCount)(Card.MalusCard(Malus.Dismissal)),
+        List.fill(malusCount)(Card.MalusCard(Malus.RepeatYear)),
+        List.fill(1)(Card.MalusCard(Malus.TerroristAttack)),
+        List.fill(smallHouseCount)(Card.House(2)),
+        List.fill(mediumHouseCount)(Card.House(3)),
+        List.fill(bigHouseCount)(Card.House(4)),
+        List.fill(travelCount)(Card.Travel(3)),
+        professions
+    ).flatten
+
+    val shuffled = scala.util.Random.shuffle(pile)
+
+    CardPiles(shuffled, List.empty)
 
 
 /** 
