@@ -153,7 +153,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
                 case 1 => Child
                 case 2 => Study
                 case 3 => Pet
-                case 4 => Malus
+                // case 4 => Malus
                 case 5 => Special
                 case 6 => Money(rand.between(1,5))
                 case 7 => Profession(rand.between(1,7),rand.between(1,5))
