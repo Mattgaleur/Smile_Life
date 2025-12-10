@@ -21,7 +21,9 @@ enum Bonus:
     case FreeHouse
     case FreeTravel
     case UnlimitedFlirt
+    case FlirtWhileMarried
     case UnlimitedStudy
+    case StudyWhileWork
 
 enum Card:
     case Flirt
@@ -50,12 +52,17 @@ enum Card:
                 isJobLess && enoughStudy
 
             case Study =>
-                (playedHand.count(_ == Study) < 6) && !playedHand.exists: 
+                def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+                def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
+                withinLimit && isNotMarried
+                (playedHand.count(_ == Study) <= 6) && !playedHand.exists: 
                     case p: Profession => true
                     case _ => false
 
             case Flirt => 
-                playedHand.forall(_ != Marriage)
+                def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+                def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
+                withinLimit && isNotMarried
                 
             case Marriage => 
                 playedHand.exists(_ == Flirt)
