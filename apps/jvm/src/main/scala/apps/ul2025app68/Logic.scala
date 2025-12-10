@@ -44,12 +44,12 @@ class Logic extends StateMachine[Event, State, View]:
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
         val playerHand: PlayedHand = board.get(userId).get
-        if gameIsOver(state.cardPiles) then
+        if gameIsOver(state.cardPiles.cardPiles) then
             throw IllegalMoveException("Accept your defeat, the game is over")
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
         else event match
-            case Event.PlayCard(card: Card) =>
+            case Event.PlayCard(card: Card, userId) =>
                 if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
                     throw IllegalMoveException("You can't play this card")
 
@@ -119,7 +119,7 @@ class Logic extends StateMachine[Event, State, View]:
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles, playerQueue) = state
 
-        if gameIsOver(state.cardPiles) then
+        if gameIsOver(state.cardPiles.cardPiles) then
             val winner = countSmiles(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
 
@@ -238,8 +238,7 @@ def gameIsOver(cardpiles: CardPiles): Boolean =
     cardpiles.drawPileIsEmpty
 
 def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
-    val next = playerQueue.dequeue()
-    val newQueue = Queue.from(playerQueue)  // copy remaining players
-    newQueue.enqueue(next)
-    newQueue
+    // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
+    // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
+    playerQueue // <-- change ça 
     
