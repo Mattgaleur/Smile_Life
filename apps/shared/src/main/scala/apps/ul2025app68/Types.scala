@@ -2,16 +2,30 @@ package apps.ul2025app68
 
 import cs214.webapp.UserId
 import scala.collection.mutable.Queue
+import ujson.Bool
+import scala.compiletime.ops.boolean
 
 enum Card:
     case Flirt
+    case Marriage
     case Child
     case Study
     case Pet
-    case Malus
+    case House(price: Int)
+    case Malus(effect: PlayedHand => Boolean)
     case Special
-    case Money(amount: Int)
-    case Profession(studyRequired: Int, salary: Int)
+    case Money(amount: Int, used: Boolean = false)
+    case Profession(studyRequired: Int, salary: Int, bonus: Option[List[JobBonus]] = None, name: String)
+
+    enum Malus:
+        case Disease
+        case Accident
+        case BurnOut
+        case Tax
+        case Divorce
+        case Dismissal
+        case TerroristAttack
+        case RepeatYear // bad translation for "redoublement" should be changed
 
     def canBePlaced(playedHand: PlayedHand): Boolean =
         this match
@@ -22,9 +36,7 @@ enum Card:
                 
             case Profession(studyRequired, salary) =>
                 val enoughStudy = playedHand.count(_ == Study) >= studyRequired
-                val isJobLess = !playedHand.exists: // Maybe do an extension for PlayedHand
-                    case p: Profession => true
-                    case _ => false 
+                val isJobLess = playedHand.exists(_.isInstanceOf[Profession])
                 isJobLess && enoughStudy
 
             case Study =>
@@ -33,16 +45,37 @@ enum Card:
                     case _ => playedHand.count(_ == Study) >= 6
 
             case Flirt => 
-                playedHand.count(_ == Flirt) < 5
-                // need to add extra condition if we add divorce
+                playedHand.forall(_ != Marriage)
+                
 
-            case Child => true // On n'a pas de cartes marriages
+            case Child => 
+                playedHand.exists(_ == Marriage)
 
             case Pet => true
 
-            case Malus => true // (on ne s'est pas décidé comment faire les effets)
+            // case Malus => true // (on ne s'est pas décidé comment faire les effets)
 
-            case Special => true // (on ne s'est pas décidé comment faire les effets)
+            case _ => true // (on ne s'est pas décidé comment faire les effets)
+
+object Card:
+    object Profession:
+        def unapply(p: Profession): Some[(Int, Int)] =
+            Some((p.studyRequired, p.salary))
+        
+        // def getEffect(p: Profession): Option[JobBonus] =
+        //     p.bonus
+
+    object Money:
+        def unapply(m: Money): Some[Int] =
+            Some(m.amount)
+
+
+enum JobBonus:
+    case MalusProtection(malus: Card.Malus)
+    case FreeHouse
+    case FreeTravel
+    case UnlimitedFlirt
+    case UnlimitedStudy
 
 
 
@@ -50,6 +83,14 @@ type Hand = Vector[Card]
 
 type PlayedHand = // Or type Life ? Or type Deck ?
     Vector[Card]
+
+extension (playedHand: PlayedHand)
+    def hasJob: Boolean = playedHand.exists:
+        case p: Card.Profession => true
+        case _ => false 
+
+    // def count(card: Card): Int = playedHand.count(_ asInstanceOf card)
+
 
 type Board = Map[UserId, PlayedHand]
 
