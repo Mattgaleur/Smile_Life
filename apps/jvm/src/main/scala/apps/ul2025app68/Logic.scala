@@ -44,7 +44,7 @@ class Logic extends StateMachine[Event, State, View]:
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
         val playerHand: PlayedHand = board.get(userId).get
-        if gameIsOver(state) then
+        if gameIsOver(state.cardPiles) then
             throw IllegalMoveException("Accept your defeat, the game is over")
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
@@ -119,7 +119,7 @@ class Logic extends StateMachine[Event, State, View]:
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles, playerQueue) = state
 
-        if gameIsOver(state) then
+        if gameIsOver(state.cardPiles) then
             val winner = countSmiles(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
 
@@ -159,15 +159,6 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
                 case 7 => Profession(rand.between(1,7),rand.between(1,5))
         } 
     CardPiles(defaultPile, List.empty)
-    // val allCards = Card.values // all possibles card types from the Card enum
-    // val defaultPile: Pile =  
-    //     List.fill(size) { //fill a list of size = input parameter "size"
-    //         val i = rand.between(0, allCards.length) 
-    //         //pick a random index between 0 and the number of different types of Card
-    //         allCards(i)
-    //         //we fill the pile with the random card type selected, ex: 0=>Flirt, 1=>Child, etc...
-    //     }
-    // CardPiles(defaultPile, List.empty) //return a CardPile with our random draw pile and an empty discard pile
 
 
 /** 
@@ -239,13 +230,13 @@ def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
 
 
 //add documentation
-def gameIsOver(state: State): Boolean =
-    // change to Paramètre, met qq chose de plus précis que state
-    val cardPiles = state.cardPiles //get the draw and discard piles from the state
-    cardPiles.drawPileIsEmpty
+def gameIsOver(cardpiles: CardPiles): Boolean =
+    // change to Paramètre, met qq chose de plus précis que state -- done ?
+    cardpiles.drawPileIsEmpty
 
 def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
     // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
     // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
-    playerQueue // <-- change ça 
+    if playerQueue.isEmpty then playerQueue
+    else Queue.from(playerQueue.tail :+ playerQueue.head)
     
