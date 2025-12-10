@@ -31,7 +31,6 @@ enum Card:
     case Pet
     case MalusCard(malus: Malus)
     case House(price: Int)
-    case Malus(effect: PlayedHand => Boolean)
     case Special(bonus: Bonus)
     case Money(amount: Int, used: Boolean = false)
     case Profession(studyRequired: Int, salary: Int, bonus: Option[List[Bonus]] = None, name: String)
