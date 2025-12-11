@@ -44,7 +44,7 @@ class Logic extends StateMachine[Event, State, View]:
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
         val playerHand: PlayedHand = board.get(userId).get
-        if gameIsOver(state.cardPiles.cardPiles) then
+        if gameIsOver(state.cardPiles) then
             throw IllegalMoveException("Accept your defeat, the game is over")
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
@@ -119,7 +119,7 @@ class Logic extends StateMachine[Event, State, View]:
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles, playerQueue) = state
 
-        if gameIsOver(state.cardPiles.cardPiles) then
+        if gameIsOver(state.cardPiles) then
             val winner = countSmiles(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
 
@@ -127,7 +127,7 @@ class Logic extends StateMachine[Event, State, View]:
             case None =>
                 throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
             case Some(hand) => 
-                val lastDiscard = if cardPiles.trashPile.isEmpty then Special else cardPiles.trashPile.head // TEMPORARY eventuellement ajouter un type null?
+                val lastDiscard = if cardPiles.trashPile.isEmpty then None else Some(cardPiles.trashPile.head) // TEMPORARY eventuellement ajouter un type null?
                 View(GameView(board, hand, lastDiscard, playerQueue.head, cardPiles.defaultPile.length))
         
 
@@ -155,9 +155,9 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
                 case 2 => Study
                 case 3 => Pet
                 // case 4 => Malus
-                case 5 => Special
+                case 5 => Special( ???, ???)
                 case 6 => Money(rand.between(1,5))
-                case 7 => Profession(rand.between(1,7),rand.between(1,5))
+                case 7 => Profession(rand.between(1,7),rand.between(1,5), ???, ???)
         } 
     CardPiles(defaultPile, List.empty)
 
@@ -193,14 +193,15 @@ def countSmiles(board: Board): Map[UserId, Int] =
 def countSmiles(board: Board, userId: UserId): Int =
     def SmileValue(card: Card): Int =
         card match
-            case Flirt => 1
-            case Child => 2
-            case Money => 1
-            case Profession => 2
-            case Study => 1
-            case Pet => 1
-            case Malus => -1
-            case Special => +1
+            // case Flirt => 1
+            // case Child => 2
+            // case Money => 1
+            // case Profession => 2
+            // case Study => 1
+            // case Pet => 1
+            // case Malus => -1
+            // case Special => +1
+            case _ => ???
         
     board(userId).map(SmileValue).sum
     
@@ -221,7 +222,7 @@ def countSmiles(board: Board, userId: UserId): Int =
     val malusAgainstMe =
         board.iterator
             .filter((otherId, _) => otherId != userId) //keeps only the cards played by other players
-            .map { case (_, cards) => cards.count(_ == Card.Malus) } //counts the number of malus cards played by other players
+            .map { case (_, cards) => cards.count(_.isInstanceOf[Card.MalusCard]) } //counts the number of malus cards played by other players
             .sum //each malus card played by another player is a -1 malus to the score
 
     baseScore - malusAgainstMe //smiles obtained by placing cards minus smiles lost due to malus  
@@ -241,4 +242,5 @@ def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
     // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
     // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
     playerQueue // <-- change ça 
+    // faut faire en sorte que si un joueur a un malus alors on pass son tour
     

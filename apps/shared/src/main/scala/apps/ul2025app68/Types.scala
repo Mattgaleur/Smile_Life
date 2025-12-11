@@ -23,7 +23,7 @@ enum Bonus:
     case UnlimitedFlirt
     case FlirtWhileMarried
     case UnlimitedStudy
-    case StudyWhileWork
+    case StudyWhileWorking
 
 enum Card:
     case Flirt
@@ -36,81 +36,77 @@ enum Card:
     case Travel(price: Int)
     case Special(bonus: Bonus, name: String)
     case Money(amount: Int, used: Boolean = false)
-    case Profession(studyRequired: Int, salary: Int, bonus: Option[List[Bonus]] = None, name: String)
+    case Profession(studyRequired: Int, salary: Int, bonus: Option[Seq[Bonus]] = None, name: String)
 
 
-    def canBePlaced(playedHand: PlayedHand): Boolean =
-        this match
-            case Money(amount) =>
-                playedHand.collectFirst {case p: Profession => p } match
-                    case Some(profession) => profession.salary >= amount 
-                    case None => false
-                
-            case Profession(studyRequired, salary) =>
-                val enoughStudy = playedHand.count(_ == Study) >= studyRequired
-                val isJobLess = playedHand.exists(_.isInstanceOf[Profession])
-                isJobLess && enoughStudy
+    def canBePlaced(playedHand: PlayedHand): Boolean = this match
+        case Money(amount,_) =>
+            playedHand.collectFirst {case p: Profession => p } match
+                case Some(profession) => profession.salary >= amount 
+                case None => false
+            
+        case Profession(studyRequired, salary,_,_) =>
+            val enoughStudy = playedHand.count(_ == Study) >= studyRequired
+            val isJobLess = playedHand.exists(_.isInstanceOf[Profession])
+            isJobLess && enoughStudy
 
-            case Study =>
-                def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
-                def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
-                withinLimit && isNotMarried
-                (playedHand.count(_ == Study) <= 6) && !playedHand.exists: 
-                    case p: Profession => true
-                    case _ => false
+        case Study =>
+            def withinLimit = (playedHand.count(_ == Study) <= 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
+            def isNotWorking = !playedHand.exists {case p: Profession => true} || playedHand.hasBonus(Bonus.StudyWhileWorking)
+            withinLimit && isNotWorking
 
-            case Flirt => 
-                def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
-                def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
-                withinLimit && isNotMarried
-                
-            case Marriage => 
-                playedHand.exists(_ == Flirt)
+        case Flirt => 
+            def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+            def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
+            withinLimit && isNotMarried
+            
+        case Marriage => 
+            playedHand.exists(_ == Flirt)
 
-            case Child => 
-                playedHand.exists(_ == Marriage)
+        case Child => 
+            playedHand.exists(_ == Marriage)
 
-            case MalusCard(malus) => 
-                def hasNoProtection = !playedHand.hasBonus(Bonus.MalusProtection(malus))
-                def canApply = malus match
-                    case Malus.Disease => true
-                    case Malus.Accident => true
-                    case Malus.BurnOut => playedHand.exists {case p: Profession => true}
-                    case Malus.Tax => playedHand.exists {case m: Money => true}
-                    case Malus.Divorce => playedHand.exists(_ == Marriage)
-                    case Malus.Dismissal => playedHand.exists {case p: Profession => true}
-                    case Malus.TerroristAttack => playedHand.exists(_ == Child)
-                    case Malus.RepeatYear => playedHand.exists(_ == Study)
-                
-                hasNoProtection && canApply
+        case MalusCard(malus) => 
+            def hasNoProtection = !playedHand.hasBonus(Bonus.MalusProtection(malus))
+            def canApply = malus match
+                case Malus.Disease => true
+                case Malus.Accident => true
+                case Malus.BurnOut => playedHand.exists {case p: Profession => true}
+                case Malus.Tax => playedHand.exists {case m: Money => true}
+                case Malus.Divorce => playedHand.exists(_ == Marriage)
+                case Malus.Dismissal => playedHand.exists {case p: Profession => true}
+                case Malus.TerroristAttack => playedHand.exists(_ == Child)
+                case Malus.RepeatYear => playedHand.exists(_ == Study) && !playedHand.exists {case p: Profession => true}
+            
+            hasNoProtection && canApply
 
-            case Pet => true
-                
-            case Special(bonus) => true
+        case Pet => true
+            
+        case Special(bonus, _) => true
 
-            case House(price) => 
-                def hasBonus = playedHand.hasBonus(Bonus.FreeHouse)
-                def hasMoney = ???
-                hasBonus || hasMoney
+        case House(price) => 
+            def hasBonus = playedHand.hasBonus(Bonus.FreeHouse)
+            def hasMoney = ???
+            hasBonus || hasMoney
 
-            case Travel(price) => 
-                def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
-                def hasMoney = ???
-                hasBonus || hasMoney 
+        case Travel(price) => 
+            def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
+            def hasMoney = ???
+            hasBonus || hasMoney 
 
         
-object Card:
-    object Profession:
-        def unapply(p: Profession): Some[(Int, Int)] =
-            Some((p.studyRequired, p.salary))
+// object Card:
+//     object Profession:
+//         def unapply(p: Profession): Some[(Int, Int)] =
+//             Some((p.studyRequired, p.salary))
         
-    object Money:
-        def unapply(m: Money): Some[Int] =
-            Some(m.amount)
+//     object Money:
+//         def unapply(m: Money): Some[Int] =
+//             Some(m.amount)
 
-    object Special:
-        def unapply(s: Special): Some[Bonus] =
-            Some(s.bonus)
+//     object Special:
+//         def unapply(s: Special): Some[Bonus] =
+//             Some(s.bonus)
 
 
 type Hand = Vector[Card]
@@ -121,7 +117,7 @@ type PlayedHand = // Or type Life ? Or type Deck ?
 extension (playedHand: PlayedHand)
     def hasBonus(bonus: Bonus): Boolean = playedHand.exists:
         case p: Card.Profession => p.bonus.isDefined && p.bonus.get.exists(_==bonus)
-        case Card.Special(thatBonus) => thatBonus == bonus 
+        case Card.Special(thatBonus, _) => thatBonus == bonus 
         case _ => false 
 
     // def count(card: Card): Int = playedHand.count(_ asInstanceOf card)
@@ -187,7 +183,7 @@ enum Event:
 case class View(val phaseView: PhaseView)
 
 enum PhaseView:
-    case GameView(board: Board, hand: Hand, lastDiscard: Card, turnOf: UserId, drawPileSize: Int)
+    case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int)
     case VictoryView(winners: List[UserId])
 
 
