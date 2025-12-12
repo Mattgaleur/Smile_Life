@@ -56,7 +56,7 @@ object Wire extends AppWire[Event, View]:
                         "phaseView"    -> "GameView",
                         "board"        -> BoardWire.encode(board),
                         "hand"         -> HandWire.encode(hand),
-                        "lastDisOption[card]"  -> LastDiscardWire.encode(lastDiscard), 
+                        "lastDiscard"  -> LastDiscardWire.encode(lastDiscard), 
                         "turnOf"       -> StringWire.encode(turnOf),
                         "drawPileSize" -> IntWire.encode(drawPileSize)
                     )
