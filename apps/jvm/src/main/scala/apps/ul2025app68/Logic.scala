@@ -83,7 +83,7 @@ class Logic extends StateMachine[Event, State, View]:
                         Render(state.copy(
                             hands = newHands,
                             board = newBoard,
-                            playerQueue = toNextPlayer(playerQueue)
+                            playerQueue = toNextPlayer(state).playerQueue
                         ))
                     )
 
@@ -98,7 +98,7 @@ class Logic extends StateMachine[Event, State, View]:
                         Render(state.copy(
                             hands = newHands,
                             cardPiles = cardPiles.discard(card),
-                            playerQueue = toNextPlayer(playerQueue)
+                            playerQueue = toNextPlayer(state).playerQueue
                         ))
                     )
                 else 
@@ -290,19 +290,24 @@ def countSmiles(board: Board): Map[UserId, Int] =
 def countSmiles(board: Board, userId: UserId): Int =
     def SmileValue(card: Card): Int =
         card match
-            // case Flirt => 1
-            // case Child => 2
-            // case Money => 1
-            // case Profession => 2
-            // case Study => 1
-            // case Pet => 1
-            // case Malus => -1
-            // case Special => +1
-            case _ => ???
-        
+            case Flirt => 1
+            case Marriage => 3
+            case Child => 2
+            case Study => 1
+            case Pet => 1
+            case House(price) => price match
+                case 2 => 1
+                case 3 => 2
+                case 4 => 3
+            case Travel(price) => 1
+            case Special(bonus, name) => 1
+            case Money(amount, used) => 1
+            case Profession(studyRequired, salary, bonus, name) => 2
+            case _ => 0
+    
     board(userId).map(SmileValue).sum
     
-    val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
+    /*val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
     //get playedHands of the required player
     val baseScore = 
         myCards.foldLeft(0) { //smile counter initialized at 0, for each played card associates a number of smiles
@@ -323,7 +328,7 @@ def countSmiles(board: Board, userId: UserId): Int =
             .sum //each malus card played by another player is a -1 malus to the score
 
     baseScore - malusAgainstMe //smiles obtained by placing cards minus smiles lost due to malus  
-
+    */
 
 // add documentation
 def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
@@ -335,13 +340,57 @@ def gameIsOver(cardpiles: CardPiles): Boolean =
     // change to Paramètre, met qq chose de plus précis que state -- done ?
     cardpiles.drawPileIsEmpty
 
-def toNextPlayer(playerQueue: Queue[UserId]): Queue[UserId] =
+def toNextPlayer(state : State): State =
     // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
     // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
-    if playerQueue.isEmpty then playerQueue
-    else Queue.from(playerQueue.tail :+ playerQueue.head)
-    // faut faire en sorte que si un joueur a un malus alors on pass son tour
+    val State(hands, board, cardPiles, playerQueue) = state
+    if playerQueue.isEmpty then state
+    else
+        //use copies
+        var queue = Queue.from(playerQueue)
+        var b = board
+        var piles = cardPiles
+        var remaining = queue.size
+        var done = false
+
+        while !done && remaining > 0 do 
+            queue = Queue.from(queue.tail :+ queue.head)
+            val current = queue.head
+
+            if hasSkipMalus(current,b) then
+                val (newBoard,newCardPiles) = inflictSkipMalus(b,piles,current)
+                b = newBoard
+                piles = newCardPiles
+                remaining -= 1
+            else
+                done = true
+
+        State(hands,b,piles,queue)
     
+    
+    // faut faire en sorte que si un joueur a un malus alors on pass son tour
+def hasSkipMalus(userId : UserId, board : Board): Boolean = 
+    board.getOrElse(userId,Vector.empty).exists{
+        case Card.MalusCard(Malus.Disease | Malus.Accident | Malus.BurnOut) => true
+        case _ => false
+    }
+
+def inflictSkipMalus(board: Board, cardPiles: CardPiles, userId: UserId): (Board, CardPiles) =
+    val playedCards = board.getOrElse(userId, Vector.empty)
+    var removed = false
+    val newHand =
+        playedCards.flatMap {
+            case c @ Card.MalusCard(m @ (Malus.Disease | Malus.Accident | Malus.BurnOut))
+                if !removed =>
+                    removed = true
+                    None
+
+            case c =>
+                Some(c)
+        }
+    (board.updated(userId, newHand), cardPiles)
+
+
 def handAfterPaying(playedHand: PlayedHand, amountToPay :Int): Option[PlayedHand] = 
     if amountToPay <= 0 then
         Some(playedHand)
