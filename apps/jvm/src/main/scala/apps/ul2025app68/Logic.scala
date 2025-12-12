@@ -210,6 +210,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
 
     val pile: List[Card] = List(
         List.fill(studyCount)(Card.Study),
+        List.fill(flirtCount)(Card.Flirt),
         List.fill(moneyCount)(Card.Money(1)),
         List.fill(moneyCount)(Card.Money(2)),
         List.fill(moneyCount)(Card.Money(3)),
@@ -288,7 +289,9 @@ def countSmiles(board: Board): Map[UserId, Int] =
   *   A Map associating each player with their number of points.
   */
 def countSmiles(board: Board, userId: UserId): Int =
-    def SmileValue(card: Card): Int =
+    board(userId).map(smileValue).sum
+    
+def smileValue(card: Card): Int =
         card match
             case Flirt => 1
             case Marriage => 3
@@ -304,9 +307,7 @@ def countSmiles(board: Board, userId: UserId): Int =
             case Money(amount, used) => 1
             case Profession(studyRequired, salary, bonus, name) => 2
             case _ => 0
-    
-    board(userId).map(SmileValue).sum
-    
+
     /*val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
     //get playedHands of the required player
     val baseScore = 

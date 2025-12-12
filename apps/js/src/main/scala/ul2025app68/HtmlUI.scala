@@ -266,7 +266,10 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     cls := "square",
                     div(cls := "top", s"🎓${studyRequired} | 💰${salary}"),
                     div(cls := "middle", name),
-                    div(cls := "bottom", bonus.get.map(b => bonusName(b)).mkString(" | "))
+                    div(cls := "bottom", bonus match 
+                        case Some(prof) => prof.map(b => bonusName(b)).mkString(" | ")
+                        case _ => "You're Useless"
+                    )
                 ).render
             
         
