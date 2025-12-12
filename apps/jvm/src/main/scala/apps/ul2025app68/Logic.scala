@@ -64,16 +64,16 @@ class Logic extends StateMachine[Event, State, View]:
                 else 
                     val newBoard = card match
                         case MalusCard(malus) => malus match
-                            case Malus.Disease => placeCard(card, against, state)
-                            case Malus.Accident => placeCard(card, against, state)
-                            case Malus.BurnOut => placeCard(card, against, state)
-                            case Malus.Tax => removeCard(_.isInstanceOf[Money], against, state)
-                            case Malus.Divorce => removeCard(_ == Marriage, against, state)
-                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], against, state)
-                            case Malus.TerroristAttack => removeCard(_ == Child, against, state, all = true)
-                            case Malus.RepeatYear => removeCard(_ == Study, against, state)
+                            case Malus.Disease => placeCard(card, against, board)
+                            case Malus.Accident => placeCard(card, against, board)
+                            case Malus.BurnOut => placeCard(card, against, board)
+                            case Malus.Tax => removeCard(_.isInstanceOf[Money], against, board)
+                            case Malus.Divorce => removeCard(_ == Marriage, against, board)
+                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], against, board)
+                            case Malus.TerroristAttack => removeCard(_ == Child, against, board, all = true)
+                            case Malus.RepeatYear => removeCard(_ == Study, against, board)
                         case _ =>
-                            placeCard(card, userId, state)
+                            placeCard(card, userId, board)
 
                     val newHands: Map[UserId, Hand] = hands.updated(
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
@@ -237,23 +237,23 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
     CardPiles(shuffled, List.empty)
 
 
-def placeCard(card: Card, userId: UserId, state: State): Board =
-    val board = state.board
+def placeCard(card: Card, userId: UserId, board: Board): Board =
     board.updated(
         userId, board.get(userId).get.appended(card)
     )
 
-def removeCard(identifier: Card => Boolean, userId: UserId, state: State, all: Boolean = false): Board =
-    val State(hands, board, cardPiles, playerQueue) = state
-    val cardsInHand = hands.get(userId).get
-    if all then
+def removeCard(identifier: Card => Boolean, userId: UserId, board: Board, all: Boolean = false): Board =
+    val playedHand = board.get(userId).get 
+    if !playedHand.exists(identifier) then
+        throw IllegalMoveException("This Malus can't be applied to this player")
+    else if all then
         board.updated(
-            userId, board.get(userId).get.filter(identifier)
+            userId, playedHand.filter(identifier)
         )
     else
-        val index = board.get(userId).get.indexWhere(identifier)
+        val index = playedHand.indexWhere(identifier)
         board.updated(
-            userId, board.get(userId).get.patch(index, Nil, 1)
+            userId, playedHand.patch(index, Nil, 1)
         )
     
     
