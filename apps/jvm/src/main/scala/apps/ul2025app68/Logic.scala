@@ -22,7 +22,7 @@ class Logic extends StateMachine[Event, State, View]:
     val appInfo: AppInfo = AppInfo(
         id = "ul2025app68",
         name = "Smile Life",
-        description = "à modifier",
+        description = "Jeu de carte humoristique ou l'on construit sa vie",
         year = 2025
     )
 
