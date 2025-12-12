@@ -68,7 +68,7 @@ object Wire extends AppWire[Event, View]:
                         "turnOf"       -> StringWire.encode(turnOf),
                         "drawPileSize" -> IntWire.encode(drawPileSize)
                     )
-                case VictoryView(winners: List[UserId]) =>
+                case VictoryView(winners: Seq[UserId]) =>
                     Obj(
                         "phaseView" -> "VictoryView",
                         "winners"   -> WinnersWire.encode(winners) 
@@ -86,7 +86,7 @@ object Wire extends AppWire[Event, View]:
                     View(GameView(board,hand,lastDiscard,turnOf,drawPileSize))  
 
                 case "VictoryView" =>
-                    val winners: List[UserId] = WinnersWire.decode(json("winners")).get.toList
+                    val winners: Seq[UserId] = WinnersWire.decode(json("winners")).get
                     View(VictoryView(winners))
 
                 
