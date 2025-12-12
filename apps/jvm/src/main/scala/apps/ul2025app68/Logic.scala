@@ -80,11 +80,14 @@ class Logic extends StateMachine[Event, State, View]:
                     )
                     
                     Seq(
-                        Render(state.copy(
-                            hands = newHands,
-                            board = newBoard,
-                            playerQueue = toNextPlayer(state).playerQueue
-                        ))
+                        Render(
+                            toNextPlayer(
+                                state.copy(
+                                    hands = newHands,
+                                    board = newBoard,
+                                )
+                            )
+                        )
                     )
 
             case Event.Discard(card) =>
@@ -131,10 +134,11 @@ class Logic extends StateMachine[Event, State, View]:
                 else 
                     val newBoard = removeCard(_.isInstanceOf[Profession], userId, board)
                     Seq(
-                        Render(state.copy(
-                            board = newBoard,
-                            playerQueue = toNextPlayer(playerQueue)
-                        ))
+                        Render(
+                            toNextPlayer(
+                                state.copy(board = newBoard)
+                            )
+                        )
                     )
 
                         
