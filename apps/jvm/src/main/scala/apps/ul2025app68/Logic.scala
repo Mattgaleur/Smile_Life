@@ -259,7 +259,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
 
      val specials = List(
         Card.Special(Bonus.DoubleStudy, "Genius"),
-        Card.Special(Bonus.DoubleFlirt, "Attractive"),
+        Card.Special(Bonus.DoubleMarriage, "Polygamy"),
         Card.Special(Bonus.MalusProtection(Malus.Tax), "Black Market"),
         Card.Special(Bonus.MalusProtection(Malus.BurnOut), "Hard Worker"),
         Card.Special(Bonus.UnlimitedStudy, "PHD"),

@@ -96,6 +96,12 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         )
 
     def renderPlayerBoard(userId: UserId, board: PlayerBoard) =
+        def getStatus(board: PlayerBoard) =
+            if board.marriage == 0 then "Single"
+                else if board.marriage == 1 then "Married"
+                    else if board.marriage == 2 then "Married Twice?!"
+                        else "broke the game"
+
         div(
             div(
                 cls := "topBoard",
@@ -109,7 +115,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             p("Child: ", board.child.toString),
             p("Study: ", board.study.toString),
             p("Pet: ", board.pet.toString),
-            p("Travels", board.travels.toString)
+            p("Travels: ", board.travels.toString),
+            p("Status: ", getStatus(board))
             ),
 
             div(
@@ -238,6 +245,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 board.collect { case s: Card.Special => s},
                 board.collect { case s: Card.House => s},
                 board.count { case Card.Travel(_) => true; case _ => false },
+                board.count { case Card.Marriage => true; case _ => false },
                 view.board.countSmiles(userId)
             )
         }
@@ -265,7 +273,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             case Bonus.FlirtWhileMarried  => "💔💘 Cheating Possible"
             case Bonus.UnlimitedStudy     => "🎓 Unlimited Study"
             case Bonus.StudyWhileWorking  => "📚 Study while Employed"
-        
+            case Bonus.DoubleMarriage => "💘 Can Marry Twice"
+            case Bonus.DoubleStudy => "📚 Double Study Level"
     
     def malusName(malus: Malus): String =
         val emoji = malus match
@@ -313,7 +322,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             case Card.Special(bonus, name) =>
                 div(
                     cls := "square",
-                    div(cls := "top", "Special"),
+                    div(cls := "top", name),
                     div(cls := "middle", bonusName(bonus)),
                     div(cls := "bottom", "")
                 ).render

@@ -23,7 +23,7 @@ enum Bonus:
     case UnlimitedStudy
     case StudyWhileWorking
     case DoubleStudy
-    case DoubleFlirt
+    case DoubleMarriage
 
 sealed trait Expenses:
     def price: Int
@@ -60,14 +60,16 @@ enum Card:
             withinLimit && isNotWorking
 
         case Flirt => 
-            val flirtMultiplier = if playedHand.hasBonus(Bonus.DoubleFlirt) then 2 else 1
-            val flirts = playedHand.count(_ == Flirt) <= 5 * flirtMultiplier
-            def withinLimit = (flirts) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+            val flirts = playedHand.count(_ == Flirt)
+            def withinLimit = (flirts <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
             def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
             withinLimit && isNotMarried
             
         case Marriage => 
-            playedHand.exists(_ == Flirt)
+            if playedHand.hasBonus(Bonus.DoubleMarriage) then 
+                playedHand.count(_ == Marriage) < 2
+                else
+                    playedHand.exists(_ == Flirt)
 
         case Child => 
             playedHand.exists(_ == Marriage)
@@ -340,6 +342,7 @@ case class PlayerBoard(
     special: Seq[Card.Special],
     houses: Seq[Card.House],
     travels: Int,
+    marriage: Int,
     smiles: Int
 )
 
