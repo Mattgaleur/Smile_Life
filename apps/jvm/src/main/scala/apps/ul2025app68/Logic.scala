@@ -188,7 +188,7 @@ class Logic extends StateMachine[Event, State, View]:
                 throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
             case Some(hand) => 
                 val lastDiscard = if cardPiles.trashPile.isEmpty then None else Some(cardPiles.trashPile.head) // TEMPORARY eventuellement ajouter un type null?
-                View(GameView(board, hand, lastDiscard, playerQueue.head, cardPiles.defaultPile.length))
+                View(GameView(board, hand, lastDiscard, playerQueue.head, cardPiles.defaultPile.length, log))
         
 
 /** 

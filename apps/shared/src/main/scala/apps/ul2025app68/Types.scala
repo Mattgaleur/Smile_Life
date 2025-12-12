@@ -270,7 +270,7 @@ case class View(val phaseView: PhaseView)
 
 enum PhaseView:
     case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log)
-    case VictoryView(winners: List[UserId])
+    case VictoryView(winners: Seq[UserId])
 
 
 case class State(

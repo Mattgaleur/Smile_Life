@@ -57,16 +57,18 @@ object Wire extends AppWire[Event, View]:
         val HandWire = VectorWire(CardWire)
         val WinnersWire = SeqWire(StringWire)
         val LastDiscardWire = OptionWire(CardWire)
+        val LogWire = SeqWire(StringWire)
         override def encode(v: View): Value =
             v.phaseView match
-                case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int) =>
+                case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log) =>
                     Obj(
                         "phaseView"    -> "GameView",
                         "board"        -> BoardWire.encode(board),
                         "hand"         -> HandWire.encode(hand),
                         "lastDiscard"  -> LastDiscardWire.encode(lastDiscard), 
                         "turnOf"       -> StringWire.encode(turnOf),
-                        "drawPileSize" -> IntWire.encode(drawPileSize)
+                        "drawPileSize" -> IntWire.encode(drawPileSize),
+                        "log"          -> LogWire.encode(log)
                     )
                 case VictoryView(winners: Seq[UserId]) =>
                     Obj(
@@ -83,7 +85,8 @@ object Wire extends AppWire[Event, View]:
                     val lastDiscard: Option[Card] = LastDiscardWire.decode(json("lastDiscard")).get
                     val turnOf: UserId = StringWire.decode(json("turnOf")).get
                     val drawPileSize: Int = IntWire.decode(json("drawPileSize")).get
-                    View(GameView(board,hand,lastDiscard,turnOf,drawPileSize))  
+                    val log: Log = LogWire.decode(json("log")).get.toList
+                    View(GameView(board,hand,lastDiscard,turnOf,drawPileSize,log))  
 
                 case "VictoryView" =>
                     val winners: Seq[UserId] = WinnersWire.decode(json("winners")).get
