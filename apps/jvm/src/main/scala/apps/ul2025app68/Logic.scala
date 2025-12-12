@@ -147,7 +147,7 @@ class Logic extends StateMachine[Event, State, View]:
         val State(hands, board, cardPiles, playerQueue) = state
 
         if gameIsOver(state.cardPiles) then
-            val winner = countSmiles(board).maxBy(_._2)._1
+            val winner = countSmilesMap(board).maxBy(_._2)._1
             View(VictoryView(List(winner)))
 
         else hands.get(userId) match
@@ -286,43 +286,11 @@ def removeCard(identifier: Card => Boolean, userId: UserId, board: Board, all: B
   * @return
   *   A Map associating each player with their number of points.
   */
-def countSmiles(board: Board): Map[UserId, Int] =
+def countSmilesMap(board: Board): Map[UserId, Int] =
     board.keySet.map(userId =>
-        (userId, countSmiles(board, userId))
+        (userId, board.countSmiles(userId))
     ).toMap
     
-/** 
-  * Count the number of Smiles for a specific player in the game. 
-  * ("Smiles" is the name for points, and the player with the most number of Smiles win)
-  *
-  * @param board
-  *     A map that links each player with the cards they have played during the game.
-  *
-  * @param userId
-  *     The user for which we want to calculate the number of Smiles.
-  * 
-  * @return
-  *   A Map associating each player with their number of points.
-  */
-def countSmiles(board: Board, userId: UserId): Int =
-    board(userId).map(smileValue).sum
-    
-def smileValue(card: Card): Int =
-        card match
-            case Flirt => 1
-            case Marriage => 3
-            case Child => 2
-            case Study => 1
-            case Pet => 1
-            case House(price) => price match
-                case 2 => 1
-                case 3 => 2
-                case 4 => 3
-            case Travel(price) => 1
-            case Special(bonus, name) => 1
-            case Money(amount, used) => 1
-            case Profession(studyRequired, salary, bonus, name) => 2
-            case _ => 0
 
     /*val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
     //get playedHands of the required player

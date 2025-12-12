@@ -91,6 +91,23 @@ enum Card:
             def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
             def hasMoney = handAfterPaying(playedHand, price).isDefined
             hasBonus || hasMoney 
+    
+    def smileValue: Int =
+        this match
+            case Flirt => 1
+            case Marriage => 3
+            case Child => 2
+            case Study => 1
+            case Pet => 1
+            case House(price) => price match
+                case 2 => 1
+                case 3 => 2
+                case 4 => 3
+            case Travel(price) => 1
+            case Special(bonus, name) => 1
+            case Money(amount, used) => 1
+            case Profession(studyRequired, salary, bonus, name) => 2
+            case _ => 0
 
         
 // object Card:
@@ -123,6 +140,23 @@ extension (playedHand: PlayedHand)
 
 type Board = Map[UserId, PlayedHand]
 
+extension (board: Board)
+    /** 
+     * Count the number of Smiles for a specific player in the game. 
+     * ("Smiles" is the name for points, and the player with the most number of Smiles win)
+     *
+     * @param board
+     *     A map that links each player with the cards they have played during the game.
+     *
+     * @param userId
+     *     The user for which we want to calculate the number of Smiles.
+     * 
+     * @return
+     *   A Map associating each player with their number of points.
+    */
+    def countSmiles(userId: UserId): Int =
+        board(userId).map(card => card.smileValue).sum
+
 type Pile = List[Card] // Maybe setting Pile as a mutable class would make things simpler
 
 case class CardPiles(
@@ -136,7 +170,6 @@ case class CardPiles(
 
     def pickCard(fromDefaultPile: Boolean): Option[(Card, CardPiles)] =
         if fromDefaultPile && defaultPile.nonEmpty then
-            print(defaultPile.head.toString)
             Some(
                 defaultPile.head, 
                 this.copy(defaultPile = defaultPile.tail)
@@ -202,7 +235,8 @@ case class PlayerBoard(
     study: Int,
     pet: Int,
     malus: Seq[Malus],
-    special: Seq[Card.Special]
+    special: Seq[Card.Special],
+    smiles: Int
 )
 
 type FullBoard = Map[UserId, PlayerBoard]
