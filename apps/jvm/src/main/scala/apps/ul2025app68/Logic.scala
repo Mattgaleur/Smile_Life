@@ -210,6 +210,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
 
     val pile: List[Card] = List(
         List.fill(studyCount)(Card.Study),
+        List.fill(flirtCount)(Card.Flirt),
         List.fill(moneyCount)(Card.Money(1)),
         List.fill(moneyCount)(Card.Money(2)),
         List.fill(moneyCount)(Card.Money(3)),

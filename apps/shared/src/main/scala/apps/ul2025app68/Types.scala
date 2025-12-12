@@ -136,6 +136,7 @@ case class CardPiles(
 
     def pickCard(fromDefaultPile: Boolean): Option[(Card, CardPiles)] =
         if fromDefaultPile && defaultPile.nonEmpty then
+            print(defaultPile.head.toString)
             Some(
                 defaultPile.head, 
                 this.copy(defaultPile = defaultPile.tail)
