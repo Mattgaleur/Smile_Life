@@ -112,7 +112,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = hands,
       board = board,
       cardPiles = CardPiles(List(Flirt), Nil),
-      playerQueue = Queue.from(Seq(p1, p2))
+      playerQueue = Queue.from(Seq(p1, p2)),
+      log = List.empty
     )
 
     val result = sm.transition(state)(p1, PlayCard(Flirt, p1))
@@ -255,7 +256,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = Map.empty,
       board = Map.empty,
       cardPiles = CardPiles(Nil, Nil),
-      playerQueue = Queue.from(USER_IDS)
+      playerQueue = Queue.from(USER_IDS),
+      log = List.empty
     )
 
     val rotatedState = toNextPlayer(state)
@@ -267,7 +269,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = Map.empty,
       board = Map.empty,
       cardPiles = CardPiles(Nil, Nil),
-      playerQueue = Queue.empty[UserId]
+      playerQueue = Queue.empty[UserId],
+      log = List.empty
     )
 
     val rotated = toNextPlayer(state)
@@ -368,7 +371,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = Map.empty,
       board = board,
       cardPiles = CardPiles(Nil, Nil), // draw pile empty -> game over
-      playerQueue = Queue.from(USER_IDS)
+      playerQueue = Queue.from(USER_IDS),
+      log = List.empty
     )
 
     val view = sm.project(state)(winner)
@@ -385,7 +389,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = Map(USER_IDS.head -> Vector(Flirt)),
       board = Map(USER_IDS.head -> Vector.empty),
       cardPiles = CardPiles(Nil, Nil), // no cards -> game over
-      playerQueue = Queue.from(USER_IDS)
+      playerQueue = Queue.from(USER_IDS),
+      log = List.empty
     )
 
     assertFailure[IllegalMoveException]:
@@ -400,7 +405,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = Map.empty, // pas utilisé par toNextPlayer
       board = board,
       cardPiles = CardPiles(Nil, Nil), // pas important ici
-      playerQueue = Queue.from(queue)
+      playerQueue = Queue.from(queue),
+      log = List.empty
     )
 
   test("SkipTurn: player with Disease skips exactly one turn and malus is destroyed"):
@@ -523,7 +529,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
       hands = hands,
       board = board,
       cardPiles = CardPiles(defaultPile = List(Flirt), trashPile = Nil), // non vide -> pas game over
-      playerQueue = Queue.from(queue)
+      playerQueue = Queue.from(queue),
+      log = List.empty
     )
 
   test("transition: playing a normal card on self moves it from hand to board and rotates turn"):
@@ -633,7 +640,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
         hands = hands,
         board = board,
         cardPiles = CardPiles(defaultPile = List(Flirt), trashPile = Nil), // not game over
-        playerQueue = Queue.from(Seq(p1))
+        playerQueue = Queue.from(Seq(p1)),
+        log = List.empty
     )
 
     assertFailure[IllegalMoveException] {
@@ -667,7 +675,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
         hands = hands,
         board = board,
         cardPiles = CardPiles(defaultPile = List(Flirt), trashPile = Nil), // not game over
-        playerQueue = Queue.from(Seq(p1, p2))
+        playerQueue = Queue.from(Seq(p1, p2)),
+        log = List.empty
     )
 
     val next = sm.transition(state)(p1, QuitJob).getState

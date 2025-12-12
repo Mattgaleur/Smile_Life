@@ -25,7 +25,7 @@ class WireTests extends WebappSuite[Event, State, View]:
         // println("Discard and PlayCard Tests")
         for card <- randomCards do
             Event.Discard(card).testEventWire
-            Event.PlayCard(card).testEventWire
+            Event.PlayCard(card, rand.nextString(10)).testEventWire
         
         val listOfRandomCardsList = List.fill(nbOfTest)(
             List.fill(5)(Card.fromOrdinal(rand.nextInt(5)))
@@ -46,7 +46,7 @@ class WireTests extends WebappSuite[Event, State, View]:
             List.fill(2)(List.fill(5)(rand.nextInt(Int.MaxValue)))
         val randomMoney = for amount <- randomInts(0) yield Money(amount) 
         val randomProfession = for (studyR, salary) <- randomInts(0).zip(randomInts(1))
-            yield Profession(studyR, salary) 
+            yield Profession(studyR, salary, None, "") 
 
         
         for 
@@ -85,7 +85,10 @@ class WireTests extends WebappSuite[Event, State, View]:
             
             View(GameView(
                 randomBoard,
-                listOfRandomCardsVector(rand.nextInt(10))
+                listOfRandomCardsVector(rand.nextInt(10)),
+                None,
+                rand.nextString(5),
+                rand.nextInt()
             )).testViewWire
 
             View(VictoryView(winners))
