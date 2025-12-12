@@ -109,23 +109,6 @@ enum Card:
             case Profession(studyRequired, salary, bonus, name) => 2
             case _ => 0
 
-
-    def smileValue: Int =
-        this match
-            case Flirt => 1
-            case Marriage => 3
-            case Child => 2
-            case Study => 1
-            case Pet => 1
-            case House(price) => price match
-                case 2 => 1
-                case 3 => 2
-                case 4 => 3
-            case Travel(price) => 1
-            case Special(bonus, name) => 1
-            case Money(amount, used) => 1
-            case Profession(studyRequired, salary, bonus, name) => 2
-            case _ => 0
         
 // object Card:
 //     object Profession:

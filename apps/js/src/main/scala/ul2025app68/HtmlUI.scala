@@ -73,7 +73,12 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
         div( cls:= "boards",
             h2("board"),
-            l.toSeq
+            l.toSeq,
+            button(
+                cls := "action",
+                "Quit Job",
+                onclick := { () => sendEvent(Event.QuitJob) }
+            )
         )
 
     def renderPlayerBoard(userId: UserId, board: PlayerBoard) =
@@ -143,7 +148,6 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         div(
             cls:= "section",
             h2("this is your hand"),
-            //p("(" + stringHand.mkString(", ") + ")"),
             div(
                 cls := "flex-row",
                 hand.map(item => cardDiv(item))
@@ -205,7 +209,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             case Card.Money(amount, false) => "Money: " + amount
             case Card.Money(amount, true) => "Used Money: " + amount
             case Card.Profession(studyRequired, salary, Some(bonus), name) => 
-                name + " " + studyRequired + "🎓, " + salary + "💰, " + bonus.map(bonusName).mkString(", ")
+                name + " " + studyRequired + "🎓, " + salary + "💰"
             case Card.Profession(studyRequired, salary, None, name) =>
                 name + " " + studyRequired + "🎓, " + salary + "💰"
     
