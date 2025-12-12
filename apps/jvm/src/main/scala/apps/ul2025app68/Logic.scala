@@ -49,8 +49,8 @@ class Logic extends StateMachine[Event, State, View]:
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
         else event match
-            case Event.PlayCard(card: Card, against: UserId) =>
-                val playerHand: PlayedHand = board.get(against).get
+            case Event.PlayCard(card: Card, selectedUser: UserId) =>
+                val playerHand: PlayedHand = board.get(selectedUser).get
                 if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
                     throw IllegalMoveException("You can't play this card")
 
@@ -64,16 +64,19 @@ class Logic extends StateMachine[Event, State, View]:
                 else 
                     val newBoard = card match
                         case MalusCard(malus) => malus match
-                            case Malus.Disease => placeCard(card, against, board)
-                            case Malus.Accident => placeCard(card, against, board)
-                            case Malus.BurnOut => placeCard(card, against, board)
-                            case Malus.Tax => removeCard(_.isInstanceOf[Money], against, board)
-                            case Malus.Divorce => removeCard(_ == Marriage, against, board)
-                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], against, board)
-                            case Malus.TerroristAttack => removeCard(_ == Child, against, board, all = true)
-                            case Malus.RepeatYear => removeCard(_ == Study, against, board)
+                            case Malus.Disease => placeCard(card, selectedUser, board)
+                            case Malus.Accident => placeCard(card, selectedUser, board)
+                            case Malus.BurnOut => placeCard(card, selectedUser, board)
+                            case Malus.Tax => removeCard(_.isInstanceOf[Money], selectedUser, board)
+                            case Malus.Divorce => removeCard(_ == Marriage, selectedUser, board)
+                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], selectedUser, board)
+                            case Malus.TerroristAttack => removeCard(_ == Child, selectedUser, board, all = true)
+                            case Malus.RepeatYear => removeCard(_ == Study, selectedUser, board)
                         case _ =>
-                            placeCard(card, userId, board)
+                            if userId != selectedUser then
+                                throw IllegalMoveException("You should play this card on yourself")
+                            else 
+                                placeCard(card, userId, board)
 
                     val newHands: Map[UserId, Hand] = hands.updated(
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)

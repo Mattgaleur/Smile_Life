@@ -84,12 +84,12 @@ enum Card:
 
         case House(price) => 
             def hasBonus = playedHand.hasBonus(Bonus.FreeHouse)
-            def hasMoney = handAfterPaying(playedHand, price).isDefined
+            def hasMoney = playedHand.handAfterPaying(price).isDefined
             hasBonus || hasMoney
 
         case Travel(price) => 
             def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
-            def hasMoney = handAfterPaying(playedHand, price).isDefined
+            def hasMoney = playedHand.handAfterPaying(price).isDefined
             hasBonus || hasMoney 
     
     def smileValue: Int =
@@ -109,6 +109,23 @@ enum Card:
             case Profession(studyRequired, salary, bonus, name) => 2
             case _ => 0
 
+
+    def smileValue: Int =
+        this match
+            case Flirt => 1
+            case Marriage => 3
+            case Child => 2
+            case Study => 1
+            case Pet => 1
+            case House(price) => price match
+                case 2 => 1
+                case 3 => 2
+                case 4 => 3
+            case Travel(price) => 1
+            case Special(bonus, name) => 1
+            case Money(amount, used) => 1
+            case Profession(studyRequired, salary, bonus, name) => 2
+            case _ => 0
         
 // object Card:
 //     object Profession:
@@ -135,8 +152,55 @@ extension (playedHand: PlayedHand)
         case Card.Special(thatBonus, _) => thatBonus == bonus 
         case _ => false 
 
-    // def count(card: Card): Int = playedHand.count(_ asInstanceOf card)
+    def handAfterPaying(amountToPay :Int): Option[PlayedHand] = 
+        if amountToPay <= 0 then
+            Some(playedHand)
+        else
+            val availableMoney: List[(Int,Int)] = // (index in hand, money)
+                playedHand.zipWithIndex.collect{
+                    case (m @ Card.Money(amount, used), idx) if !used => // filter cards that are Money and not used
+                        (idx, amount)
+                }.toList
+            
+            if availableMoney.isEmpty then None //if no money placed, no way to pay
+            else
+                val totalAvailable = availableMoney.map(_._2).sum // (idx,amount) so we take _.2 and sum to have all available money
+                if totalAvailable < amountToPay then // if not enough money to pay, no way to pay
+                    None
+                else // if enough money to pay
+                    var bestCombo: Option[(Int,List[(Int,Int)])] = None // (totalAvailable,List[(idx,amount)]), the bestCombo is None at first
+                    for 
+                        k <- 1 to availableMoney.length
+                        combo <- availableMoney.combinations(k) //all combinations of the money we have possible
+                    do
+                        val sum = combo.map(_._2).sum
+                        if sum >= amountToPay then
+                            val overpay = sum - amountToPay
+                            bestCombo match
+                                case None => //initialized at None, updated in first iteration
+                                    bestCombo = Some((sum,combo.toList))
+                                case Some((bestSum,bestList)) => // compare with previous best way to pay to determine which is better
+                                    val bestOverpay = bestSum - amountToPay
+                                    if overpay < bestOverpay || (overpay == bestOverpay && combo.size < bestList.size) then 
+                                        // if pay less payed or if same payed but higher cards (keep smallest for more possibilities)
+                                        bestCombo = Some((sum,combo.toList))
 
+                    bestCombo match
+                        case None => None
+                        case Some((_,chosen)) => 
+                            val indicesToUse: Set[Int]= chosen.map(_._1).toSet // Set of indexes of Money cards of the best way to pay
+                            val newHand: PlayedHand = 
+                                playedHand.zipWithIndex.map {
+                                    case (m @ Card.Money(amount,used), idx) if indicesToUse.contains(idx) => 
+                                        m.copy(used = true) // if Money is used to pay here, copy but used = True now
+                                    case (card, _) => card  // cards that are not money stay the same
+                                }
+                            Some(newHand)
+
+                                        
+
+
+                        
 
 type Board = Map[UserId, PlayedHand]
 
