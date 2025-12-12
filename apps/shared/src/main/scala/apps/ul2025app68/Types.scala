@@ -195,12 +195,12 @@ case class State(
 case class PlayerBoard(
     flirt: Int,
     child: Int,
-    money: Seq[Card],
-    profession: Option[Card],
+    money: Seq[Card.Money],
+    profession: Option[Card.Profession],
     study: Int,
     pet: Int,
-    malus: Seq[Card],
-    special: Seq[Card]
+    malus: Seq[Malus],
+    special: Seq[Card.Special]
 )
 
 type FullBoard = Map[UserId, PlayerBoard]

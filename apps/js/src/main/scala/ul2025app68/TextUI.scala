@@ -76,7 +76,7 @@ class TextUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                         case "trash" => Option(Event.PickCard(false))
                         case _ => throw new Exception("unknown command")
             
-                    case "play" => if 1 <= input(1).toInt && input(1).toInt <= 6 then Option(Event.PlayCard(gv.hand(input(1).toInt-1)))
+                    case "play" => if 1 <= input(1).toInt && input(1).toInt <= 6 then Option(Event.PlayCard(gv.hand(input(1).toInt-1), userId))
                         else throw new Exception("unknown card index")
                     case "discard" => if 1 <= input(1).toInt && input(1).toInt <= 6 then Option(Event.Discard(gv.hand(input(1).toInt-1)))
                         else throw new Exception("unknown card index")

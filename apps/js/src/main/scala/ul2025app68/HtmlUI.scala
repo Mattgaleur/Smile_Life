@@ -7,6 +7,7 @@ import scalatags.JsDom.tags2.{details, summary}
 import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom.Sequence
 import org.scalajs.dom.HTMLDivElement
+import apps.ul2025app68.Card.Profession
 
 
 @JSExportTopLevel("ul2025app68_Html")
@@ -60,7 +61,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     cls := "trash",
                     if yourTurn then onclick := { () => sendEvent(Event.PickCard(false)) }
                     else frag(),
-                    p("trash : " + view.lastDiscard.toString)
+                    p("trash : " + view.lastDiscard.fold("No Cards in Trash")(cardName))
                 )
             )
         )
@@ -92,42 +93,44 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             // 2️⃣ Profession
             div(
             cls := "professionSection",
-            p(board.profession.map(_.toString).getOrElse("Unemployed"))
+            board.profession match
+                case Some(profession: Profession) => frag(cardDiv(profession))
+                case _ => p("Unemployed")
             ),
 
             // 3️⃣ Expandable card groups in one line
             div(
             cls := "cardGroups",
-            renderExpandable("Money", board.money.map(_.toString)),
+            renderExpandable("Money", board.money.collect{case Card.Money(a,false) => "Salary : " + a.toString}),
             renderExpandable("Malus", board.malus.map(_.toString)),
-            renderExpandable("Special", board.special.map(_.toString))
+            renderExpandable("Special", board.special.map(_.name))
             )
         )
 
     def renderExpandable(title: String, cards: Seq[String]): Frag =
-    if cards.isEmpty then
-        p(s"No $title cards")
-    else
-        details(
-        summary(s"$title (${cards.size})"),
-        ul(cards.map(c => li(c))*)
-        )
+        if cards.isEmpty then
+            p(s"No $title cards")
+        else
+            details(
+            summary(s"$title (${cards.size})"),
+            ul(cards.map(c => li(c))*)
+            )
 
     def renderHand(userId: UserId, view: PhaseView.GameView) =
         val hand = view.hand.toSeq
-        val stringHand = hand.map(card => card.toString)
+        val stringHand = hand.map(card => cardName(card))
         val dropDownHand = select(
             stringHand.map(card => option(value := card, card))*
         ).render
-        val dropDownChoice = select(
+        val dropDownChoice: org.scalajs.dom.HTMLSelectElement = select(
                 view.board.keySet.toSeq.map(userId => option(value := userId, userId))*
         ).render
-        var choiceHolder: HTMLDivElement = div(p("no selected card")).render
+        var choiceHolder: org.scalajs.dom.Element = div(p("no selected card")).render
         
         dropDownHand.addEventListener("change", _ => {
             val selectedCard = hand(stringHand.indexOf(dropDownHand.value))
             selectedCard match
-                case Card.Malus => choiceHolder.textContent = ""
+                case Card.MalusCard(_) => choiceHolder.textContent = ""
                     choiceHolder.appendChild(dropDownChoice)
                 case _ => choiceHolder.textContent = "you"
             })
@@ -137,7 +140,11 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         div(
             cls:= "section",
             h2("this is your hand"),
-            p("(" + stringHand.mkString(", ") + ")"),
+            //p("(" + stringHand.mkString(", ") + ")"),
+            div(
+                cls := "flex-row",
+                hand.map(item => cardDiv(item))
+            ),
             dropDownHand,
             button(
                 cls := "action",
@@ -146,7 +153,11 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     val chosenCard = dropDownHand.value       // get selected value
                     val cardIndex = stringHand.indexOf(chosenCard)
                     val card = hand(cardIndex)                // get original card object
-                    sendEvent(Event.PlayCard(card))           // send event
+                    val receiver = choiceHolder match
+                        case e: org.scalajs.dom.HTMLSelectElement => e.value
+                        case _ => userId
+                    
+                    sendEvent(Event.PlayCard(card,receiver))           // send event
                 }
             ),
             button(
@@ -171,14 +182,96 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             PlayerBoard(
                 board.count { case Card.Flirt => true; case _ => false },
                 board.count { case Card.Child => true; case _ => false },
-                board.filter { case Card.Money => true; case _ => false },
-                board.find { case Card.Profession => true; case _ => false },
+                board.collect { case m: Card.Money => m},
+                board.collectFirst { case p: Card.Profession => p},
                 board.count { case Card.Study => true; case _ => false },
                 board.count { case Card.Pet => true; case _ => false },
-                board.filter { case Card.Malus => true; case _ => false },
-                board.filter { case Card.Special => true; case _ => false }
+                board.collect { case Card.MalusCard(malus) => malus},
+                board.collect { case s: Card.Special => s}
             )
         }
+    
+    def cardName(card: Card): String =
+        card match
+            case Card.Flirt | Card.Marriage | Card.Child | Card.Study | Card.Pet => card.toString
+            case Card.MalusCard(malus) => malus.toString
+            case Card.House(price) => "House : " + price + "$"
+            case Card.Travel(price) => "Travel : " + price + "$"
+            case Card.Special(bonus, name) => name
+            case Card.Money(amount, false) => "Money: " + amount
+            case Card.Money(amount, true) => "Used Money: " + amount
+            case Card.Profession(studyRequired, salary, Some(bonus), name) => 
+                name + " " + studyRequired + "🎓, " + salary + "💰, " + bonus.mkString(", ")
+            case Card.Profession(studyRequired, salary, None, name) =>
+                name + " " + studyRequired + "🎓, " + salary + "💰"
+    
+    def bonusName(bonus: Bonus): String = 
+        bonus match
+            case Bonus.MalusProtection(mal: Malus) => malusName(mal) + " resistant"
+            case Bonus.FreeHouse          => "🏠 One Free House"
+            case Bonus.FreeTravel         => "✈️ Free Travels"
+            case Bonus.UnlimitedFlirt     => "💘 Unlimited Flirts"
+            case Bonus.FlirtWhileMarried  => "💔💘 Cheating Possible"
+            case Bonus.UnlimitedStudy     => "🎓 Unlimited Study"
+            case Bonus.StudyWhileWorking  => "📚 Study while Employed"
+        
+    
+    def malusName(malus: Malus): String =
+        val emoji = malus match
+            case Malus.Disease         => "🦠 "
+            case Malus.Accident        => "🚑 "
+            case Malus.BurnOut         => "🔥 "
+            case Malus.Tax             => "💸 "
+            case Malus.Divorce         => "💔 "
+            case Malus.Dismissal       => "📤 "
+            case Malus.TerroristAttack => "💣 "
+            case Malus.RepeatYear      => "🔄 "
+        emoji + malus.toString
+    
+    def cardDiv(card: Card): HTMLDivElement =    
+        card match
+            case Card.Flirt | Card.Marriage | Card.Child | Card.Study | Card.Pet => 
+                div(
+                    cls := "square",
+                    div(cls := "middle", card.toString)
+                ).render
+            case Card.MalusCard(malus) =>
+                div(
+                    cls := "square",
+                    div(cls := "middle", malusName(malus))
+                ).render
+            case Card.House(price) => 
+                div(
+                    cls := "square",
+                    div(cls := "middle", "🏠 House : " + price + "$")
+                ).render
+            case Card.Travel(price) =>
+                div(
+                    cls := "square",
+                    div(cls := "middle", "✈️ Travel : " + price + "$")
+                ).render
+            case Card.Special(bonus, name) =>
+                div(
+                    cls := "square",
+                    div(cls := "top", "Special"),
+                    div(cls := "middle", bonusName(bonus))
+                ).render
+            case Card.Money(amount, used) =>
+                div(
+                    cls := "square",
+                    div(cls := "middle", "💸 Money: " + amount + "$")
+                ).render
+            case Card.Profession(studyRequired, salary, bonus, name) =>
+                div(
+                    cls := "square",
+                    div(cls := "top", s"🎓${studyRequired} | 💰${salary}"),
+                    div(cls := "middle", name),
+                    div(cls := "bottom", bonus.get.map(b => bonusName(b)).mkString(" | "))
+                ).render
+            
+        
+                
+        
     
     override def css: String = super.css + """
         html {
@@ -250,6 +343,40 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         .piles {
             display: grid;
             grid-template-columns: 1fr 1fr;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: nowrap;
+        }
+
+        .square {
+            width: 120px;
+            height: 150px;
+            background: #91b7c4;
+            border: 2px solid #5b7c87;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .top {
+            font-weight: bold;
+        }
+
+        .middle {
+            font-size: 1rem;
+        }
+
+        .bottom {
+            font-size: 0.8rem;
         }
 
         details > ul {
