@@ -367,3 +367,122 @@ class LogicTests extends WebappSuite[Event, State, View]:
         assertFailure[IllegalMoveException]:
             sm.transition(state)(state.getUserToPlay, PlayCard(Flirt))
     }
+
+    // ## SKIP TURN TESTS #####################################################
+
+    // Petit helper pour fabriquer un State minimal pour tester toNextPlayer
+    def mkState(board: Board, queue: Seq[UserId]): State =
+        State(
+            hands = Map.empty,                 // pas utilisé par toNextPlayer
+            board = board,
+            cardPiles = CardPiles(Nil, Nil),   // pas important ici
+            playerQueue = Queue.from(queue)
+        )
+
+    test("SkipTurn: player with Disease skips exactly one turn and malus is destroyed"):
+        assume(USER_IDS.length >= 3)
+        val p1 = USER_IDS(0)
+        val p2 = USER_IDS(1)
+        val p3 = USER_IDS(2)
+
+        val board: Board = Map(
+            p1 -> Vector.empty,
+            p2 -> Vector(Card.MalusCard(Malus.Disease)), // doit skip
+            p3 -> Vector.empty
+        )
+
+        val state = mkState(board, Seq(p1, p2, p3))
+
+        // On simule la fin du tour de p1: on passe au suivant
+        val next = toNextPlayer(state)
+
+        // p2 doit être sauté, donc le prochain à jouer est p3
+        assertEquals(next.playerQueue.head, p3)
+        // L'ordre doit rester cyclique
+        assertEquals(next.playerQueue.toList, List(p3, p1, p2))
+        // Le malus doit être retiré du board de p2
+        assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
+
+    test("SkipTurn: player with Accident also skips one turn"):
+        assume(USER_IDS.length >= 3)
+        val p1 = USER_IDS(0)
+        val p2 = USER_IDS(1)
+        val p3 = USER_IDS(2)
+
+        val board: Board = Map(
+            p1 -> Vector.empty,
+            p2 -> Vector(Card.MalusCard(Malus.Accident)),
+            p3 -> Vector.empty
+        )
+
+        val state = mkState(board, Seq(p1, p2, p3))
+        val next = toNextPlayer(state)
+
+        // p2 a Accident -> il saute, donc p3 joue
+        assertEquals(next.playerQueue.head, p3)
+        // Accident détruit
+        assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
+
+    test("SkipTurn: player with BurnOut also skips one turn"):
+        assume(USER_IDS.length >= 3)
+        val p1 = USER_IDS(0)
+        val p2 = USER_IDS(1)
+        val p3 = USER_IDS(2)
+
+        val board: Board = Map(
+            p1 -> Vector.empty,
+            p2 -> Vector(Card.MalusCard(Malus.BurnOut)),
+            p3 -> Vector.empty
+        )
+
+        val state = mkState(board, Seq(p1, p2, p3))
+        val next = toNextPlayer(state)
+
+        // p2 a BurnOut -> il saute, donc p3 joue
+        assertEquals(next.playerQueue.head, p3)
+        // BurnOut détruit
+        assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
+
+    test("SkipTurn: if two consecutive players have skip-malus, both skip and rotation continues"):
+        assume(USER_IDS.length >= 3)
+        val p1 = USER_IDS(0)
+        val p2 = USER_IDS(1)
+        val p3 = USER_IDS(2)
+
+        val board: Board = Map(
+            p1 -> Vector.empty,
+            p2 -> Vector(Card.MalusCard(Malus.Disease)),
+            p3 -> Vector(Card.MalusCard(Malus.BurnOut))
+        )
+
+        val state = mkState(board, Seq(p1, p2, p3))
+        val next = toNextPlayer(state)
+
+        // p2 skip, p3 skip, donc on retombe sur p1
+        assertEquals(next.playerQueue.head, p1)
+        // Les deux malus doivent être détruits
+        assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
+        assertEquals(next.board.getOrElse(p3, Vector.empty), Vector.empty)
+        // L'ordre reste cyclique
+        assertEquals(next.playerQueue.toList, List(p1, p2, p3))
+
+    test("SkipTurn: skipping stops as soon as we reach a player without skip-malus"):
+        assume(USER_IDS.length >= 3)
+        val p1 = USER_IDS(0)
+        val p2 = USER_IDS(1)
+        val p3 = USER_IDS(2)
+
+        val board: Board = Map(
+            p1 -> Vector.empty,
+            p2 -> Vector(Card.MalusCard(Malus.Accident)),
+            p3 -> Vector.empty
+        )
+
+        val state = mkState(board, Seq(p1, p2, p3))
+        val next = toNextPlayer(state)
+
+        // p2 skip -> p3 joue
+        assertEquals(next.playerQueue.head, p3)
+        // p2 a perdu son malus, p3 n'a rien changé
+        assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
+        assertEquals(next.board.getOrElse(p3, Vector.empty), Vector.empty)
