@@ -30,17 +30,29 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     div(
                         cls:= "section",
                         h1("SmileLife"),
+                        renderLogs(Seq()),
                         p("it is " + turnMessage + " turn")
                     ),
                     renderPileButtons(userId, gv),
                     renderBoard(fullBoard),
                     renderHand(userId, gv)
                 )
-            case vv: PhaseView.VictoryView =>
-                frag(
-                    h1(vv.winners.mkString(" ") + " won!!!!")
-                )
+            case vv: PhaseView.VictoryView => renderEndScreen(vv,userId)
     
+    def killGame =
+        button(
+                cls := "kill",
+                "Kill Game",
+                onclick := { () => sendEvent(Event.PlayCard(card,receiver)) }
+            )
+    
+    def renderLogs(logs: Seq[String]) =
+        details(
+            summary("Game Logs"),
+            ul(
+            logs.map(log => li(log))*
+            )
+        )
     
     def renderPileButtons(userId: UserId, view: PhaseView.GameView) =
         val yourTurn = view.turnOf == userId
@@ -89,16 +101,15 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 p(board.smiles.toString + "🙂")
             ),
             cls := "playerBoard",
-            // 1️⃣ Stats line
             div(
             cls := "statsRow",
             p("Flirts: ", board.flirt.toString),
             p("Child: ", board.child.toString),
             p("Study: ", board.study.toString),
-            p("Pet: ", board.pet.toString)
+            p("Pet: ", board.pet.toString),
+            p("Travels", board.travels.toString)
             ),
 
-            // 2️⃣ Profession
             div(
             cls := "professionSection",
             board.profession match
@@ -106,12 +117,12 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 case _ => p("Unemployed")
             ),
 
-            // 3️⃣ Expandable card groups in one line
             div(
             cls := "cardGroups",
             renderExpandable("Money", board.money.collect{case Card.Money(a,false) => "Salary : " + a.toString}),
             renderExpandable("Malus", board.malus.map(_.toString)),
-            renderExpandable("Special", board.special.map(_.name))
+            renderExpandable("Special", board.special.map(_.name)),
+            renderExpandable("Houses", board.houses.map(cardName))
             )
         )
 
@@ -181,6 +192,11 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 choiceHolder
             )
         )
+    
+    def renderEndScreen(view: PhaseView.VictoryView, userId: UserId) =
+        frag(
+            h1(view.winners.mkString(" ") + " won!!!!")
+        )
         
     
     def createFullBoardParallel(view: PhaseView.GameView): FullBoard = 
@@ -195,6 +211,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 board.count { case Card.Pet => true; case _ => false },
                 board.collect { case Card.MalusCard(malus) => malus},
                 board.collect { case s: Card.Special => s},
+                board.collect { case s: Card.House => s},
+                board.count { case Card.Travel(_) => true; case _ => false },
                 view.board.countSmiles(userId)
             )
         }
@@ -407,6 +425,26 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             justify-content: space-between;
             align-items: center;
             width: 100%;
+        }
+
+        .kill {
+            padding: 4px 8px;
+            font-size: 12px;
+            background-color: #5b7c87ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .kill:hover {
+            background-color: #306aa8ff; /* darker red on hover */
+        }
+
+        .kill:active {
+            background-color: rgba(41, 25, 160, 1)ff; /* pressed red */
+            transform: scale(0.97);
         }
 
         details > ul {
