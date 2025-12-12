@@ -8,6 +8,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import org.scalajs.dom.Sequence
 import org.scalajs.dom.HTMLDivElement
 import apps.ul2025app68.Card.Profession
+import scala.caps.use
 
 
 @JSExportTopLevel("ul2025app68_Html")
@@ -30,7 +31,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     div(
                         cls:= "section",
                         h1("SmileLife"),
-                        renderLogs(Seq()),
+                        renderKillGame,
+                        renderLogs(gv.log),
                         p("it is " + turnMessage + " turn")
                     ),
                     renderPileButtons(userId, gv),
@@ -39,11 +41,11 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 )
             case vv: PhaseView.VictoryView => renderEndScreen(vv,userId)
     
-    def killGame =
+    def renderKillGame =
         button(
                 cls := "kill",
                 "Kill Game",
-                onclick := { () => sendEvent(Event.PlayCard(card,receiver)) }
+                onclick := { () => sendEvent(Event.EndGame) }
             )
     
     def renderLogs(logs: Seq[String]) =
@@ -134,6 +136,18 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             summary(s"$title (${cards.size})"),
             ul(cards.map(c => li(c))*)
             )
+    
+    def renderExpandableMoney(cards: Seq[Card.Money]): Frag =
+        if cards.isEmpty then p("No Salary Cards") 
+        else
+            details(
+                summary("Salary (" + cards.size + ")"),
+                ul(
+                    cards.map { card =>
+                        val color = if (!card.used) "blue" else "red"
+                        li(style := s"color: $color", cardName(card)) }
+                )
+            )
 
     def renderHand(userId: UserId, view: PhaseView.GameView) =
         val hand = view.hand.toSeq
@@ -195,7 +209,18 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     
     def renderEndScreen(view: PhaseView.VictoryView, userId: UserId) =
         frag(
-            h1(view.winners.mkString(" ") + " won!!!!")
+            if view.winners.contains(userId) then 
+                div(
+                    cls := "section",
+                    h1("Congratulations,  YOU WON !"),
+                    h2("Players " + view.winners.mkString(", ") + " won!")
+                )
+                else 
+                    div(
+                    cls := "section",
+                    h1("You... Lost..."),
+                    h2("Players " + view.winners.mkString(", ") + " won!")
+                )
         )
         
     
