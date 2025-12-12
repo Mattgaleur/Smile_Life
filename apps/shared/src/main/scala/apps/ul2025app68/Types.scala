@@ -23,6 +23,9 @@ enum Bonus:
     case UnlimitedStudy
     case StudyWhileWorking
 
+sealed trait Expenses:
+    def price: Int
+
 enum Card:
     case Flirt
     case Marriage
@@ -30,12 +33,11 @@ enum Card:
     case Study
     case Pet
     case MalusCard(malus: Malus)
-    case House(price: Int)
-    case Travel(price: Int)
+    case Travel(price: Int) extends Card with Expenses
+    case House(price: Int) extends Card with Expenses
     case Special(bonus: Bonus, name: String)
     case Money(amount: Int, used: Boolean = false)
     case Profession(studyRequired: Int, salary: Int, bonus: Option[Seq[Bonus]] = None, name: String)
-
 
     def canBePlaced(playedHand: PlayedHand): Boolean = this match
         case Money(amount,_) =>
@@ -135,7 +137,7 @@ extension (playedHand: PlayedHand)
         case Card.Special(thatBonus, _) => thatBonus == bonus 
         case _ => false 
 
-    def handAfterPaying(amountToPay :Int): Option[PlayedHand] = 
+    def handAfterPaying(amountToPay: Int): Option[PlayedHand] = 
         if amountToPay <= 0 then
             Some(playedHand)
         else

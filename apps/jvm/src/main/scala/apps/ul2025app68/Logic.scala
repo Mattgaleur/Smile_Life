@@ -50,7 +50,7 @@ class Logic extends StateMachine[Event, State, View]:
             throw IllegalMoveException("Not your turn to play")
         else event match
             case Event.PlayCard(card: Card, selectedUser: UserId) =>
-                val playerHand: PlayedHand = board.get(selectedUser).get
+                val playerHand: PlayedHand = board(selectedUser)
                 if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
                     throw IllegalMoveException("You can't play this card")
 
@@ -72,6 +72,15 @@ class Logic extends StateMachine[Event, State, View]:
                             case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], selectedUser, board)
                             case Malus.TerroristAttack => removeCard(_ == Child, selectedUser, board, all = true)
                             case Malus.RepeatYear => removeCard(_ == Study, selectedUser, board)
+                        case expenses: Expenses =>
+                            val newPlayedHandOpt = playerHand.handAfterPaying(expenses.price)
+                            if userId != selectedUser then
+                                throw IllegalMoveException("You should play this card on yourself")
+                            else if newPlayedHandOpt.isEmpty then
+                                throw IllegalMoveException("You don't have enough money")
+                            else
+                                board.updated(userId, newPlayedHandOpt.get)
+
                         case _ =>
                             if userId != selectedUser then
                                 throw IllegalMoveException("You should play this card on yourself")
