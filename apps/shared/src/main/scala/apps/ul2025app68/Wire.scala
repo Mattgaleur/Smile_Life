@@ -29,6 +29,8 @@ object Wire extends AppWire[Event, View]:
                     )
                 case QuitJob =>
                     Obj("type" -> "QuitJob")
+                case EndGame =>
+                    Obj("type" -> "EndGame")
             
 
         override def decode(json: Value): Try[Event] = Try :
@@ -45,6 +47,8 @@ object Wire extends AppWire[Event, View]:
                     PickCard(isDefaultPile)
                 case "QuitJob" => 
                     QuitJob
+                case "EndGame" => 
+                    EndGame
             
       
 

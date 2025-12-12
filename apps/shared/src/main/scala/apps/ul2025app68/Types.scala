@@ -261,6 +261,7 @@ enum Event:
         // true -> DefaultPile
         // false -> DiscardPile
     case QuitJob
+    case EndGame
 
 case class View(val phaseView: PhaseView)
 

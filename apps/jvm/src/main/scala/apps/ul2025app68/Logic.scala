@@ -152,6 +152,14 @@ class Logic extends StateMachine[Event, State, View]:
                             )
                         )
                     )
+            case Event.EndGame =>
+                Seq(
+                    Render(
+                        state.copy(
+                            cardPiles = CardPiles(List.empty, List.empty)
+                        )
+                    )
+                )
 
                         
 
