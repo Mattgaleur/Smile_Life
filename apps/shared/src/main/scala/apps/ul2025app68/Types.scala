@@ -22,6 +22,7 @@ enum Bonus:
     case FlirtWhileMarried
     case UnlimitedStudy
     case StudyWhileWorking
+    case Genius
 
 sealed trait Expenses:
     def price: Int
@@ -46,7 +47,9 @@ enum Card:
                 case None => false
             
         case Profession(studyRequired, salary,_,_) =>
-            val enoughStudy = playedHand.count(_ == Study) >= studyRequired
+            val studyMultiplier = if playedHand.hasBonus(Bonus.Genius) then 2 else 1
+            val studies = playedHand.count(_ == Study) * studyMultiplier
+            val enoughStudy =  studies >= studyRequired
             val isJobLess = !playedHand.exists(_.isInstanceOf[Profession])
             isJobLess && enoughStudy
 
@@ -266,8 +269,8 @@ enum Event:
 case class View(val phaseView: PhaseView)
 
 enum PhaseView:
-    case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int)
-    case VictoryView(winners: Seq[UserId])
+    case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log)
+    case VictoryView(winners: List[UserId])
 
 
 case class State(
