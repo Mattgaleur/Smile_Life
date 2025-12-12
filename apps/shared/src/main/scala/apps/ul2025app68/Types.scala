@@ -45,7 +45,7 @@ enum Card:
             
         case Profession(studyRequired, salary,_,_) =>
             val enoughStudy = playedHand.count(_ == Study) >= studyRequired
-            val isJobLess = playedHand.exists(_.isInstanceOf[Profession])
+            val isJobLess = !playedHand.exists(_.isInstanceOf[Profession])
             isJobLess && enoughStudy
 
         case Study =>

@@ -13,6 +13,7 @@ import cs214.webapp.Action.Render
 import apps.ul2025app68.Card.*
 import apps.ul2025app68.PhaseView.*
 import scala.collection.mutable.Queue
+import scala.languageFeature.experimental.macros
 
 given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
 val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
@@ -43,36 +44,47 @@ class Logic extends StateMachine[Event, State, View]:
         val State(hands, board, cardPiles, playerQueue) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
-        val playerHand: PlayedHand = board.get(userId).get
         if gameIsOver(state.cardPiles) then
             throw IllegalMoveException("Accept your defeat, the game is over")
         else if !isTurnOf(userId, playerQueue) then
             throw IllegalMoveException("Not your turn to play")
         else event match
-            case Event.PlayCard(card: Card, userId) =>
+            case Event.PlayCard(card: Card, against: UserId) =>
+                val playerHand: PlayedHand = board.get(against).get
                 if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
                     throw IllegalMoveException("You can't play this card")
 
                 else if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
                     throw IllegalMoveException("You should draw a card first")
 
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
-                    val newBoard: Board = board.updated(
-                        userId, board.get(userId).get.appended(card)
+                else if nbOfCardsInHands != MAX_NUMBER_OF_CARD_IN_HAND then
+                    throw IllegalStateException(
+                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
                     )
+                else 
+                    val newBoard = card match
+                        case MalusCard(malus) => malus match
+                            case Malus.Disease => placeCard(card, against, state)
+                            case Malus.Accident => placeCard(card, against, state)
+                            case Malus.BurnOut => placeCard(card, against, state)
+                            case Malus.Tax => removeCard(_.isInstanceOf[Money], against, state)
+                            case Malus.Divorce => removeCard(_ == Marriage, against, state)
+                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], against, state)
+                            case Malus.TerroristAttack => removeCard(_ == Child, against, state, all = true)
+                            case Malus.RepeatYear => removeCard(_ == Study, against, state)
+                        case _ =>
+                            placeCard(card, userId, state)
+
                     val newHands: Map[UserId, Hand] = hands.updated(
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
                     )
+                    
                     Seq(
                         Render(state.copy(
                             hands = newHands,
                             board = newBoard,
                             playerQueue = toNextPlayer(playerQueue)
                         ))
-                    )
-                else 
-                    throw IllegalStateException(
-                        f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
                     )
 
             case Event.Discard(card) =>
@@ -113,8 +125,7 @@ class Logic extends StateMachine[Event, State, View]:
                         f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
                     )
 
-                
-        
+                        
 
     override def project(state: State)(userId: UserId): View = 
         val State(hands, board, cardPiles, playerQueue) = state
@@ -225,6 +236,28 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
 
     CardPiles(shuffled, List.empty)
 
+
+def placeCard(card: Card, userId: UserId, state: State): Board =
+    val board = state.board
+    board.updated(
+        userId, board.get(userId).get.appended(card)
+    )
+
+def removeCard(identifier: Card => Boolean, userId: UserId, state: State, all: Boolean = false): Board =
+    val State(hands, board, cardPiles, playerQueue) = state
+    val cardsInHand = hands.get(userId).get
+    if all then
+        board.updated(
+            userId, board.get(userId).get.filter(identifier)
+        )
+    else
+        val index = board.get(userId).get.indexWhere(identifier)
+        board.updated(
+            userId, board.get(userId).get.patch(index, Nil, 1)
+        )
+    
+    
+    
 
 /** 
   * Count the number of Smiles for each player in the game. 
