@@ -296,11 +296,47 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
     CardPiles(shuffled, List.empty)
 
 
+/** Places a card onto a player's played hand (their board).
+  *
+  * The card is appended at the end of the player's vector of played cards.
+  *
+  * @param card
+  *   The card to place.
+  * @param userId
+  *   The player receiving the card (could be self or another player, depending on rules).
+  * @param board
+  *   The current board state.
+  * @return
+  *   A new board where `card` has been appended to `userId`'s played hand.
+  */
 def placeCard(card: Card, userId: UserId, board: Board): Board =
     board.updated(
         userId, board.get(userId).get.appended(card)
     )
 
+
+/** Removes a card from a player's played hand, based on a predicate.
+  *
+  * Used to apply maluses that destroy/remove some existing card(s) from the target player.
+  *
+  * Behavior:
+  *   - If the player does not have any card satisfying `identifier`, the move is illegal.
+  *   - If `all = false`, removes exactly one matching card (the first match).
+  *   - If `all = true`, removes all matching cards.
+  *
+  * @param identifier
+  *   Predicate that returns true for the cards we want to remove.
+  * @param userId
+  *   The target player.
+  * @param board
+  *   The current board.
+  * @param all
+  *   If true, remove all matching cards; otherwise remove only one.
+  * @throws IllegalMoveException
+  *   If no matching card exists in the target player's played hand.
+  * @return
+  *   A new board where the matching card(s) have been removed from `userId`'s played hand.
+  */
 def removeCard(identifier: Card => Boolean, userId: UserId, board: Board, all: Boolean = false): Board =
     val playedHand = board.get(userId).get 
     if !playedHand.exists(identifier) then
