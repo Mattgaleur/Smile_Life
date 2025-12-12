@@ -26,7 +26,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         view.phaseView match
             case gv: PhaseView.GameView => 
                 val fullBoard = createFullBoardParallel(gv)
-                val turnMessage: String = if gv.turnOf == userId then "your" else userId + "'s"
+                val turnMessage: String = if gv.turnOf == userId then "your" else gv.turnOf + "'s"
                 frag(
                     div(
                         cls:= "section",
@@ -166,13 +166,21 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 view.board.keySet.toSeq.map(userId => option(value := userId, userId))*
         ).render
         var choiceHolder: org.scalajs.dom.Element = div(p("no selected card")).render
+        var selectedReceiver: UserId = userId
+
+        dropDownChoice.addEventListener("change", _ => {
+            selectedReceiver = dropDownChoice.value
+            })
         
         dropDownHand.addEventListener("change", _ => {
             val selectedCard = hand(stringHand.indexOf(dropDownHand.value))
             selectedCard match
-                case Card.MalusCard(_) => choiceHolder.textContent = ""
+                case Card.MalusCard(_) =>
+                    choiceHolder.textContent = ""
                     choiceHolder.appendChild(dropDownChoice)
-                case _ => choiceHolder.textContent = "you"
+                case _ =>
+                    choiceHolder.textContent = "you"
+                    selectedReceiver = userId
             })
 
         
@@ -192,11 +200,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     val chosenCard = dropDownHand.value       // get selected value
                     val cardIndex = stringHand.indexOf(chosenCard)
                     val card = hand(cardIndex)                // get original card object
-                    val receiver = choiceHolder match
-                        case e: org.scalajs.dom.HTMLSelectElement => e.value
-                        case _ => userId
                     
-                    sendEvent(Event.PlayCard(card,receiver))           // send event
+                    sendEvent(Event.PlayCard(card, selectedReceiver))           // send event
                 }
             ),
             button(
