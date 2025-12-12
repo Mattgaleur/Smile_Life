@@ -257,6 +257,15 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
         Card.Profession(6, 4, None, "Astronaut")
     )
 
+     val specials = List(
+        Card.Special(Bonus.DoubleStudy, "Genius"),
+        Card.Special(Bonus.DoubleFlirt, "Attractive"),
+        Card.Special(Bonus.MalusProtection(Malus.Tax), "Black Market"),
+        Card.Special(Bonus.MalusProtection(Malus.BurnOut), "Hard Worker"),
+        Card.Special(Bonus.UnlimitedStudy, "PHD"),
+        Card.Special(Bonus.MalusProtection(Malus.Accident), "Car Insurance")
+    )
+
     val pile: List[Card] = List(
         List.fill(studyCount)(Card.Study),
         List.fill(flirtCount)(Card.Flirt),

@@ -22,7 +22,8 @@ enum Bonus:
     case FlirtWhileMarried
     case UnlimitedStudy
     case StudyWhileWorking
-    case Genius
+    case DoubleStudy
+    case DoubleFlirt
 
 sealed trait Expenses:
     def price: Int
@@ -47,7 +48,7 @@ enum Card:
                 case None => false
             
         case Profession(studyRequired, salary,_,_) =>
-            val studyMultiplier = if playedHand.hasBonus(Bonus.Genius) then 2 else 1
+            val studyMultiplier = if playedHand.hasBonus(Bonus.DoubleStudy) then 2 else 1
             val studies = playedHand.count(_ == Study) * studyMultiplier
             val enoughStudy =  studies >= studyRequired
             val isJobLess = !playedHand.exists(_.isInstanceOf[Profession])
@@ -59,7 +60,9 @@ enum Card:
             withinLimit && isNotWorking
 
         case Flirt => 
-            def withinLimit = (playedHand.count(_ == Flirt) <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+            val flirtMultiplier = if playedHand.hasBonus(Bonus.DoubleFlirt) then 2 else 1
+            val flirts = playedHand.count(_ == Flirt) <= 5 * flirtMultiplier
+            def withinLimit = (flirts) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
             def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
             withinLimit && isNotMarried
             
