@@ -286,6 +286,8 @@ case class PlayerBoard(
     pet: Int,
     malus: Seq[Malus],
     special: Seq[Card.Special],
+    houses: Seq[Card.House],
+    travels: Int,
     smiles: Int
 )
 
