@@ -334,39 +334,57 @@ def countSmilesMap(board: Board): Map[UserId, Int] =
     ).toMap
     
 
-    /*val myCards: PlayedHand = board.getOrElse(userId, Vector.empty)
-    //get playedHands of the required player
-    val baseScore = 
-        myCards.foldLeft(0) { //smile counter initialized at 0, for each played card associates a number of smiles
-            case (acc, Card.Flirt) => acc + 1
-            case (acc, Card.Child) => acc + 3
-            case (acc, Card.Money) => acc
-            case (acc, Card.Profession) => acc 
-            case (acc, Card.Study) => acc 
-            case (acc, Card.Pet) => acc + 2
-            case (acc, Card.Special) => acc + 1
-            case (acc, _) => acc
-        }
-    
-    val malusAgainstMe =
-        board.iterator
-            .filter((otherId, _) => otherId != userId) //keeps only the cards played by other players
-            .map { case (_, cards) => cards.count(_.isInstanceOf[Card.MalusCard]) } //counts the number of malus cards played by other players
-            .sum //each malus card played by another player is a -1 malus to the score
 
-    baseScore - malusAgainstMe //smiles obtained by placing cards minus smiles lost due to malus  
-    */
-
-// add documentation
+/** Checks whether it is currently `userId`'s turn to play.
+  *
+  * The rule is simple: the player who is at the head of `playerQueue`
+  * is the only one allowed to perform an action.
+  *
+  * @param userId
+  *   The player who is trying to act.
+  * @param playerQueue
+  *   The queue representing turn order. The head is the current player.
+  * @return
+  *   True iff `userId` is the head of the queue.
+  */
 def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
     playerQueue.head == userId
 
 
-//add documentation
+/** Determines whether the game is over.
+  *
+  * In this game, the end condition is currently defined as:
+  * the draw pile (default pile) is empty.
+  *
+  * @param cardpiles
+  *   The current piles (draw pile + trash pile).
+  * @return
+  *   True iff there are no cards left to draw.
+  */
 def gameIsOver(cardpiles: CardPiles): Boolean =
     // change to Paramètre, met qq chose de plus précis que state -- done ?
     cardpiles.drawPileIsEmpty
 
+
+/** Advances the game to the next player, while applying "skip turn" maluses.
+  *
+  * This method rotates the `playerQueue` (cyclic order), and if the next
+  * player is affected by a skip-malus (Disease, Accident, BurnOut),
+  * then that player is skipped:
+  *   - the queue is rotated again
+  *   - the malus is consumed (destroyed from the player's board)
+  *
+  * The method keeps skipping until it finds a player that does NOT have
+  * a skip-malus, or until it has checked everyone once (to avoid infinite loops).
+  *
+  * @param state
+  *   The current state (hands, board, piles, queue, log).
+  * @return
+  *   A new state where:
+  *     - `playerQueue` has been rotated to the next valid player
+  *     - skipped players had one skip-malus removed from their board
+  *     - all other fields remain the same except the updated board/piles.
+  */
 def toNextPlayer(state : State): State =
     // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
     // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
@@ -395,13 +413,50 @@ def toNextPlayer(state : State): State =
         State(hands, b, piles, queue, log)
     
     
-    // faut faire en sorte que si un joueur a un malus alors on pass son tour
+
+/** Checks whether a given player currently has a "skip turn" malus.
+  *
+  * A skip-malus is one of:
+  *   - Disease
+  *   - Accident
+  *   - BurnOut
+  *
+  * If at least one of those malus cards exists in the player's played hand,
+  * then the player should lose their next turn.
+  *
+  * @param userId
+  *   The player we check.
+  * @param board
+  *   The game board mapping each player to their played cards.
+  * @return
+  *   True iff the player's played hand contains a skip-malus.
+  */
 def hasSkipMalus(userId : UserId, board : Board): Boolean = 
     board.getOrElse(userId,Vector.empty).exists{
         case Card.MalusCard(Malus.Disease | Malus.Accident | Malus.BurnOut) => true
         case _ => false
     }
 
+
+/** Consumes (destroys) exactly one skip-malus from a player's played hand.
+  *
+  * This is used when a player is skipped: the malus should not remain forever,
+  * so we remove only the first occurrence of a skip-malus from their board.
+  *
+  * Important: the malus is NOT added to the trash pile (it is destroyed),
+  * because players should not be able to pick it up again.
+  *
+  * @param board
+  *   The board mapping each player to their played cards.
+  * @param cardPiles
+  *   The piles (kept unchanged here, because skip maluses are destroyed).
+  * @param userId
+  *   The skipped player whose malus we consume.
+  * @return
+  *   A pair (newBoard, newCardPiles) where:
+  *     - newBoard is the board with one skip-malus removed from `userId`
+  *     - newCardPiles is unchanged
+  */
 def inflictSkipMalus(board: Board, cardPiles: CardPiles, userId: UserId): (Board, CardPiles) =
     val playedCards = board.getOrElse(userId, Vector.empty)
     var removed = false
