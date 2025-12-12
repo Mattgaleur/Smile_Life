@@ -37,11 +37,12 @@ class Logic extends StateMachine[Event, State, View]:
             hands = hands, 
             board = board, 
             cardPiles = updatedCardPiles,
-            playerQueue = playerQueue
+            playerQueue = playerQueue,
+            log = List("The Game Started")
         )
 
     override def transition(state: State)(userId: UserId, event: Event): Try[Seq[Action[State]]] = Try:
-        val State(hands, board, cardPiles, playerQueue) = state
+        val State(hands, board, cardPiles, playerQueue, log) = state
         val cardsInHand: Vector[Card] = hands.get(userId).get  
         val nbOfCardsInHands: Int = cardsInHand.length
         if gameIsOver(state.cardPiles) then
@@ -97,6 +98,7 @@ class Logic extends StateMachine[Event, State, View]:
                                 state.copy(
                                     hands = newHands,
                                     board = newBoard,
+                                    log = log.write(userId)(event)
                                 )
                             )
                         )
@@ -110,11 +112,14 @@ class Logic extends StateMachine[Event, State, View]:
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
                     )
                     Seq(
-                        Render(state.copy(
-                            hands = newHands,
-                            cardPiles = cardPiles.discard(card),
-                            playerQueue = toNextPlayer(state).playerQueue
-                        ))
+                        Render(
+                            state.copy(
+                                hands = newHands,
+                                cardPiles = cardPiles.discard(card),
+                                playerQueue = toNextPlayer(state).playerQueue,
+                                log = log.write(userId)(event)
+                            )
+                        )
                     )
                 else 
                     throw IllegalStateException(
@@ -128,10 +133,13 @@ class Logic extends StateMachine[Event, State, View]:
 
                     case Some((card, updatedCardPiles)) => 
                         Seq(
-                            Render(state.copy(
-                                hands = hands.updated(userId, cardsInHand.appended(card)),
-                                cardPiles = updatedCardPiles
-                            ))
+                            Render(
+                                state.copy(
+                                    hands = hands.updated(userId, cardsInHand.appended(card)),
+                                    cardPiles = updatedCardPiles,
+                                    log = log.write(userId)(event)
+                                )
+                            )
                         )
                 else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
                     throw IllegalMoveException("You can't pick a card, you already did")
@@ -148,7 +156,10 @@ class Logic extends StateMachine[Event, State, View]:
                     Seq(
                         Render(
                             toNextPlayer(
-                                state.copy(board = newBoard)
+                                state.copy(
+                                    board = newBoard,
+                                    log = log.write(userId)(event)
+                                )
                             )
                         )
                     )
@@ -156,7 +167,8 @@ class Logic extends StateMachine[Event, State, View]:
                 Seq(
                     Render(
                         state.copy(
-                            cardPiles = CardPiles(List.empty, List.empty)
+                            cardPiles = CardPiles(List.empty, List.empty),
+                            log = log.write(userId)(event)
                         )
                     )
                 )
@@ -164,7 +176,7 @@ class Logic extends StateMachine[Event, State, View]:
                         
 
     override def project(state: State)(userId: UserId): View = 
-        val State(hands, board, cardPiles, playerQueue) = state
+        val State(hands, board, cardPiles, playerQueue, log) = state
 
         if gameIsOver(state.cardPiles) then
             val winner = countSmilesMap(board).maxBy(_._2)._1
@@ -348,7 +360,7 @@ def gameIsOver(cardpiles: CardPiles): Boolean =
 def toNextPlayer(state : State): State =
     // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
     // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
-    val State(hands, board, cardPiles, playerQueue) = state
+    val State(hands, board, cardPiles, playerQueue, log) = state
     if playerQueue.isEmpty then state
     else
         //use copies
@@ -370,7 +382,7 @@ def toNextPlayer(state : State): State =
             else
                 done = true
 
-        State(hands,b,piles,queue)
+        State(hands, b, piles, queue, log)
     
     
     // faut faire en sorte que si un joueur a un malus alors on pass son tour

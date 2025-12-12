@@ -256,7 +256,7 @@ case class CardPiles(
 
 enum Event:
     case Discard(card: Card)
-    case PlayCard(card: Card, on: UserId)
+    case PlayCard(card: Card, selectedUser: UserId)
     case PickCard(isDefaultPile: Boolean)
         // true -> DefaultPile
         // false -> DiscardPile
@@ -274,8 +274,54 @@ case class State(
     hands: Map[UserId, Hand],
     board: Board, 
     cardPiles: CardPiles,
-    playerQueue: Queue[UserId]
+    playerQueue: Queue[UserId],
+    log: Log
 )
+
+type Log = List[String]
+
+extension (log: Log)
+    def write(userId: UserId)(event: Event): Log =
+        event match
+            case Event.Discard(card) => 
+                f"$userId discarded a ${card.productPrefix} card" :: log
+
+            case Event.PickCard(isDefaultPile) =>
+                if isDefaultPile then
+                    f"$userId drew a card from the Pile" :: log
+                else 
+                    f"$userId drew a card from the Trash Pile" :: log
+
+            case Event.QuitJob =>
+                f"$userId decided to quit his job" :: log
+
+            case Event.EndGame =>
+                f"$userId is tired of playing, he ended the game" :: log
+
+            case Event.PlayCard(card, selectedUser) => card match
+                case Card.MalusCard(malus) => 
+                    f"$userId used $malus on $selectedUser" :: log 
+                case Card.Travel(price) =>
+                    f"$userId planned a Travel for $price" :: log
+                case Card.House(price) =>
+                    f"$userId bought a House for $price" :: log
+                case Card.Special(bonus, name) =>
+                    f"$userId played the $name" :: log
+                case Card.Money(amount, used) =>
+                    f"$userId earned $amount Money" :: log
+                case Card.Profession(studyRequired, salary, bonus, name) =>
+                    f"$userId became a $name" :: log
+                case Card.Flirt =>
+                    f"$userId decided to Flirt" :: log
+                case Card.Marriage =>
+                    f"$userId married a random person, congrats!" :: log
+                case Card.Child =>
+                    f"$userId had a child with his partner" :: log
+                case Card.Study =>
+                    f"$userId spent one year to Study" :: log
+                case Card.Pet =>
+                    f"$userId bought a pet" :: log
+        
 
 case class PlayerBoard(
     flirt: Int,
