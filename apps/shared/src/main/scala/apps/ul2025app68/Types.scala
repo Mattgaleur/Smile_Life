@@ -84,12 +84,12 @@ enum Card:
 
         case House(price) => 
             def hasBonus = playedHand.hasBonus(Bonus.FreeHouse)
-            def hasMoney = ???
+            def hasMoney = handAfterPaying(playedHand, price).isDefined
             hasBonus || hasMoney
 
         case Travel(price) => 
             def hasBonus = playedHand.hasBonus(Bonus.FreeTravel)
-            def hasMoney = ???
+            def hasMoney = handAfterPaying(playedHand, price).isDefined
             hasBonus || hasMoney 
 
         
@@ -178,6 +178,7 @@ enum Event:
     case PickCard(isDefaultPile: Boolean)
         // true -> DefaultPile
         // false -> DiscardPile
+    case QuitJob
 
 case class View(val phaseView: PhaseView)
 

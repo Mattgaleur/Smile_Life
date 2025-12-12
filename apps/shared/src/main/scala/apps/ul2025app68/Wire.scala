@@ -27,6 +27,8 @@ object Wire extends AppWire[Event, View]:
                         "type" -> "PickCard",
                         "isDefaultPile" -> BooleanWire.encode(isDefaultPile) 
                     )
+                case QuitJob =>
+                    Obj("type" -> "QuitJob")
             
 
         override def decode(json: Value): Try[Event] = Try :
@@ -41,6 +43,8 @@ object Wire extends AppWire[Event, View]:
                 case "PickCard" =>
                     val isDefaultPile: Boolean = json("isDefaultPile").bool
                     PickCard(isDefaultPile)
+                case "QuitJob" => 
+                    QuitJob
             
       
 

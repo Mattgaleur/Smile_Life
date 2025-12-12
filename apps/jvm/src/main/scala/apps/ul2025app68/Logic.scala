@@ -124,6 +124,18 @@ class Logic extends StateMachine[Event, State, View]:
                     throw IllegalStateException(
                         f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
                     )
+            case Event.QuitJob =>
+                val playerHand: PlayedHand = board.get(userId).get
+                if !playerHand.exists(_.isInstanceOf[Profession]) then
+                    throw IllegalMoveException("You can't quit your job, you don't have one")
+                else 
+                    val newBoard = removeCard(_.isInstanceOf[Profession], userId, board)
+                    Seq(
+                        Render(state.copy(
+                            board = newBoard,
+                            playerQueue = toNextPlayer(playerQueue)
+                        ))
+                    )
 
                         
 
