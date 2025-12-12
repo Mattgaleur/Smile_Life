@@ -2,8 +2,6 @@ package apps.ul2025app68
 
 import cs214.webapp.UserId
 import scala.collection.mutable.Queue
-import ujson.Bool
-import scala.compiletime.ops.boolean
 
 // Maluses
 enum Malus:
@@ -41,7 +39,7 @@ enum Card:
 
     def canBePlaced(playedHand: PlayedHand): Boolean = this match
         case Money(amount,_) =>
-            playedHand.collectFirst {case p: Profession => p } match
+            playedHand.collectFirst {case p: Profession => p} match
                 case Some(profession) => profession.salary >= amount 
                 case None => false
             
@@ -52,7 +50,7 @@ enum Card:
 
         case Study =>
             def withinLimit = (playedHand.count(_ == Study) <= 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
-            def isNotWorking = !playedHand.exists {case p: Profession => true} || playedHand.hasBonus(Bonus.StudyWhileWorking)
+            def isNotWorking = !playedHand.exists(_.isInstanceOf[Profession]) || playedHand.hasBonus(Bonus.StudyWhileWorking)
             withinLimit && isNotWorking
 
         case Flirt => 
@@ -71,12 +69,12 @@ enum Card:
             def canApply = malus match
                 case Malus.Disease => true
                 case Malus.Accident => true
-                case Malus.BurnOut => playedHand.exists {case p: Profession => true}
-                case Malus.Tax => playedHand.exists {case m: Money => true}
+                case Malus.BurnOut => playedHand.exists(_.isInstanceOf[Profession])
+                case Malus.Tax => playedHand.exists(_.isInstanceOf[Money])
                 case Malus.Divorce => playedHand.exists(_ == Marriage)
-                case Malus.Dismissal => playedHand.exists {case p: Profession => true}
+                case Malus.Dismissal => playedHand.exists(_.isInstanceOf[Profession])
                 case Malus.TerroristAttack => playedHand.exists(_ == Child)
-                case Malus.RepeatYear => playedHand.exists(_ == Study) && !playedHand.exists {case p: Profession => true}
+                case Malus.RepeatYear => playedHand.exists(_ == Study) && !playedHand.exists(_.isInstanceOf[Profession])
             
             hasNoProtection && canApply
 

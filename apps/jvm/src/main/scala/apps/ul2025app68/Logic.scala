@@ -349,7 +349,7 @@ def handAfterPaying(playedHand: PlayedHand, amountToPay :Int): Option[PlayedHand
                         val newHand: PlayedHand = 
                             playedHand.zipWithIndex.map {
                                 case (m @ Card.Money(amount,used), idx) if indicesToUse.contains(idx) => 
-                                    m.copy(used = True) // if Money is used to pay here, copy but used = True now
+                                    m.copy(used = true) // if Money is used to pay here, copy but used = True now
                                 case (card, _) => card  // cards that are not money stay the same
                             }
                         Some(newHand)
