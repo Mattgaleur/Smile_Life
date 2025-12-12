@@ -78,9 +78,12 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderPlayerBoard(userId: UserId, board: PlayerBoard) =
         div(
-            p("These are " + userId + "'s cards"),
+            div(
+                cls := "topBoard",
+                p("These are " + userId + "'s cards "),
+                p(board.smiles.toString + "🙂")
+            ),
             cls := "playerBoard",
-
             // 1️⃣ Stats line
             div(
             cls := "statsRow",
@@ -187,7 +190,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 board.count { case Card.Study => true; case _ => false },
                 board.count { case Card.Pet => true; case _ => false },
                 board.collect { case Card.MalusCard(malus) => malus},
-                board.collect { case s: Card.Special => s}
+                board.collect { case s: Card.Special => s},
+                view.board.countSmiles(userId)
             )
         }
     
@@ -201,7 +205,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             case Card.Money(amount, false) => "Money: " + amount
             case Card.Money(amount, true) => "Used Money: " + amount
             case Card.Profession(studyRequired, salary, Some(bonus), name) => 
-                name + " " + studyRequired + "🎓, " + salary + "💰, " + bonus.mkString(", ")
+                name + " " + studyRequired + "🎓, " + salary + "💰, " + bonus.map(bonusName).mkString(", ")
             case Card.Profession(studyRequired, salary, None, name) =>
                 name + " " + studyRequired + "🎓, " + salary + "💰"
     
@@ -228,38 +232,50 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             case Malus.RepeatYear      => "🔄 "
         emoji + malus.toString
     
-    def cardDiv(card: Card): HTMLDivElement =    
+    def cardDiv(card: Card): HTMLDivElement =
+        val smiles = card.smileValue.toString + " " + "🙂"
         card match
             case Card.Flirt | Card.Marriage | Card.Child | Card.Study | Card.Pet => 
                 div(
                     cls := "square",
-                    div(cls := "middle", card.toString)
+                    div(cls := "top", ""),
+                    div(cls := "middle", card.toString),
+                    div(cls := "bottom", smiles)
                 ).render
             case Card.MalusCard(malus) =>
                 div(
                     cls := "square",
-                    div(cls := "middle", malusName(malus))
+                    div(cls := "top", "Malus"),
+                    div(cls := "middle", malusName(malus)),
+                    div(cls := "bottom", "")
                 ).render
             case Card.House(price) => 
                 div(
                     cls := "square",
-                    div(cls := "middle", "🏠 House : " + price + "$")
+                    div(cls := "top", ""),
+                    div(cls := "middle", "🏠 House : " + price + "$"),
+                    div(cls := "bottom", smiles)
                 ).render
             case Card.Travel(price) =>
                 div(
                     cls := "square",
-                    div(cls := "middle", "✈️ Travel : " + price + "$")
+                    div(cls := "top", ""),
+                    div(cls := "middle", "✈️ Travel : " + price + "$"),
+                    div(cls := "bottom", smiles)
                 ).render
             case Card.Special(bonus, name) =>
                 div(
                     cls := "square",
                     div(cls := "top", "Special"),
-                    div(cls := "middle", bonusName(bonus))
+                    div(cls := "middle", bonusName(bonus)),
+                    div(cls := "bottom", "")
                 ).render
             case Card.Money(amount, used) =>
                 div(
                     cls := "square",
-                    div(cls := "middle", "💸 Money: " + amount + "$")
+                    div(cls := "top", ""),
+                    div(cls := "middle", "💸 Money: " + amount + "$"),
+                    div(cls := "bottom", smiles)
                 ).render
             case Card.Profession(studyRequired, salary, bonus, name) =>
                 div(
@@ -267,8 +283,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     div(cls := "top", s"🎓${studyRequired} | 💰${salary}"),
                     div(cls := "middle", name),
                     div(cls := "bottom", bonus match 
-                        case Some(prof) => prof.map(b => bonusName(b)).mkString(" | ")
-                        case _ => "You're Useless"
+                        case Some(prof) => prof.map(b => bonusName(b)).mkString(" | ") + " | " + smiles
+                        case _ => smiles
                     )
                 ).render
             
@@ -380,6 +396,13 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
         .bottom {
             font-size: 0.8rem;
+        }
+
+        .topBoard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
         }
 
         details > ul {
