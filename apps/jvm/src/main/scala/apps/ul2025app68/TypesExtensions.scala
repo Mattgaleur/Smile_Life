@@ -36,7 +36,7 @@ extension (card: Card)
             val nbOfFlirt = playedHand.count(_ == Flirt)
             val nbOfMarriage = playedHand.count(_ == Marriage)
             
-            (playedHand.hasBonus(Bonus.DoubleMarriage) && nbOfFlirt >= 2 && playedHand.count(_ == Marriage) < 2) || 
+            (playedHand.hasBonus(Bonus.DoubleMarriage) && (nbOfFlirt >= 1) && (playedHand.count(_ == Marriage) < 2)) || 
             (nbOfFlirt != 0 && nbOfMarriage == 0)
                 
 
