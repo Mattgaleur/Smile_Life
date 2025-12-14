@@ -80,7 +80,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
           cls := "pile",
           if yourTurn then onclick := { () => sendEvent(Event.PickCard(true)) }
           else frag(),
-          p("Pile: " + view.drawPileSize + " Cards Left")
+          p("Pile: " + view.defaultPileSize + " Cards Left")
         ),
         button(
           cls := "trash",
