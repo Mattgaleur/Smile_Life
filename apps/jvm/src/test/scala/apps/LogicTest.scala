@@ -378,7 +378,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     val view = sm.project(state)(winner)
 
     view.phaseView match
-      case VictoryView(winners) =>
+      case VictoryView(winners,board,log) =>
         assertEquals(winners, List(winner))
       case other =>
         fail(s"Expected VictoryView, got $other")
