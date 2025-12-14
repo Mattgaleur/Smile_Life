@@ -65,10 +65,12 @@ enum Card:
             withinLimit && isNotMarried
             
         case Marriage => 
-            if playedHand.hasBonus(Bonus.DoubleMarriage) then 
-                playedHand.count(_ == Marriage) < 2
-                else
-                    playedHand.exists(_ == Flirt)
+            val nbOfFlirt = playedHand.count(_ == Flirt)
+            val nbOfMarriage = playedHand.count(_ == Marriage)
+            
+            (playedHand.hasBonus(Bonus.DoubleMarriage) && nbOfFlirt >= 2 && playedHand.count(_ == Marriage) < 2) || 
+            (nbOfFlirt != 0 && nbOfMarriage == 0)
+                
 
         case Child => 
             playedHand.exists(_ == Marriage)
