@@ -259,9 +259,9 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
         Card.Profession(5, 3, Some(List(Bonus.MalusProtection(Malus.Disease))), "Pharmacist"),
         Card.Profession(5, 4, Some(List(Bonus.FreeTravel)), "Airline pilot"),
         // 6 studies
-        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.UnlimitedStudy)), "Doctor"),
+        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.StudyWhileWorking)), "Doctor"),
         Card.Profession(6, 2, None, "Researcher"),
-        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.UnlimitedStudy)), "Surgeon"),
+        Card.Profession(6, 4, Some(List( Bonus.MalusProtection(Malus.Disease), Bonus.StudyWhileWorking)), "Surgeon"),
         Card.Profession(6, 4, None, "Astronaut")
     )
 
