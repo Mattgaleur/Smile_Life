@@ -276,7 +276,7 @@ case class View(val phaseView: PhaseView)
 
 enum PhaseView:
     case GameView(board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log)
-    case VictoryView(winners: Seq[UserId])
+    case VictoryView(winners: Seq[UserId], board: Board, log: Log)
 
 
 case class State(
@@ -329,7 +329,7 @@ extension (log: Log)
                 case Card.Study =>
                     f"$userId spent one year to Study" :: log
                 case Card.Pet =>
-                    f"$userId bought a pet" :: log
+                    f"$userId bought a Pet" :: log
         
 
 case class PlayerBoard(

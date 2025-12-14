@@ -194,7 +194,7 @@ class Logic extends StateMachine[Event, State, View]:
         if gameIsOver(state.cardPiles) then
             val maxSmiles = countSmilesMap(board).values.max          
             val winners = countSmilesMap(board).filter(_._2 == maxSmiles).keys.toSeq       
-            View(VictoryView(winners))
+            View(VictoryView(winners, board, log))
 
         else hands.get(userId) match
             case None =>

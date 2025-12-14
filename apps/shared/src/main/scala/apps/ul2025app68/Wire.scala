@@ -70,10 +70,12 @@ object Wire extends AppWire[Event, View]:
                         "drawPileSize" -> IntWire.encode(drawPileSize),
                         "log"          -> LogWire.encode(log)
                     )
-                case VictoryView(winners: Seq[UserId]) =>
+                case VictoryView(winners: Seq[UserId], board: Board, log: Log) =>
                     Obj(
                         "phaseView" -> "VictoryView",
-                        "winners"   -> WinnersWire.encode(winners) 
+                        "winners"   -> WinnersWire.encode(winners), 
+                        "board"     -> BoardWire.encode(board),
+                        "log"       -> LogWire.encode(log)
                     )
 
         
@@ -90,7 +92,9 @@ object Wire extends AppWire[Event, View]:
 
                 case "VictoryView" =>
                     val winners: Seq[UserId] = WinnersWire.decode(json("winners")).get
-                    View(VictoryView(winners))
+                    val board: Board = BoardWire.decode(json("board")).get
+                    val log: Log = LogWire.decode(json("log")).get.toList
+                    View(VictoryView(winners, board, log))
 
                 
             

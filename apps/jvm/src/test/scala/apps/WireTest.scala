@@ -72,8 +72,8 @@ class WireTests extends WebappSuite[Event, State, View]:
 
     test("View Wire: PhaseView.Victory enconding works"):
         assertProp(
-            Prop.forAll { (winners: Seq[UserId]) =>
-                Try {View(PhaseView.VictoryView(winners: Seq[UserId]))}.isSuccess
+            Prop.forAll { (winners: Seq[UserId], board: Board, log: Log) =>
+                Try {View(PhaseView.VictoryView(winners, board, log))}.isSuccess
             }
         )
 
@@ -150,4 +150,4 @@ class WireTests extends WebappSuite[Event, State, View]:
                 log = List.empty
             )).testViewWire
 
-            View(VictoryView(winners))
+            View(VictoryView(winners,Map.empty,List.empty))

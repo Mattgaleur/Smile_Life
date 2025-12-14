@@ -83,34 +83,6 @@ given Arbitrary[Card] =
     )
   }
 
-given Arbitrary[PhaseView] =
-  Arbitrary {
-
-    val gameView =
-      for
-        board         <- Arbitrary.arbitrary[Board]
-        hand          <- Arbitrary.arbitrary[Hand]
-        lastDiscard   <- Gen.option(Arbitrary.arbitrary[Card])
-        turnOf        <- Arbitrary.arbitrary[UserId]
-        drawPileSize  <- Gen.choose(0, 200)
-        log           <- Arbitrary.arbitrary[Log]
-      yield PhaseView.GameView(
-        board,
-        hand,
-        lastDiscard,
-        turnOf,
-        drawPileSize,
-        log
-      )
-
-    val victoryView =
-      Gen.nonEmptyListOf(Arbitrary.arbitrary[UserId])
-        .map(_.distinct)
-        .map(PhaseView.VictoryView.apply)
-
-    Gen.oneOf(gameView, victoryView)
-  }
-
 given Arbitrary[Vector[Card]] =
   Arbitrary {
     Gen.choose(0, 10).flatMap { n =>
