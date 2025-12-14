@@ -662,7 +662,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     )
 
     val hands: Map[UserId, Hand] = Map(
-        p1 -> (Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ Flirt), // 6 cards
+        p1 -> (Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt)), // 5 cards
         p2 -> Vector.empty
     )
 
@@ -679,7 +679,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
         log = List.empty
     )
 
-    val next = sm.transition(state)(p1, QuitJob).getState
+    val next = sm.transition(state)(p1, Event.QuitJob).getState
 
     // Profession removed
     assertEquals(next.board.getOrElse(p1, Vector.empty), Vector.empty)
