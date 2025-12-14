@@ -10,7 +10,7 @@ import cs214.webapp.Action.Render
 import scala.util.Try
 import Card.*
 import munit.FunSuite
-import scala.collection.mutable.Queue
+import scala.collection.immutable.Queue
 import PhaseView.*
 
 import Event.*
@@ -279,13 +279,14 @@ class LogicTests extends WebappSuite[Event, State, View]:
 
   test("isTurnOf is true only for the head of the queue") {
     val q = Queue.from(USER_IDS)
+    val state = initState.copy(playerQueue = q)
     val head = q.head
     val others = q.tail
 
-    assert(isTurnOf(head, q))
+    assert(state.isTurnOf(head))
 
     for user <- others do
-      assert(!isTurnOf(user, q))
+      assert(!state.isTurnOf(user))
   }
 
   // ## COUNTSMILES TESTS  (adaptés à countSmilesMap) ########################
