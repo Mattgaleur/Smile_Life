@@ -20,8 +20,6 @@ extension (card: Card)
             isJobLess && enoughStudy
 
         case Study =>
-            println(f"Study count: ${playedHand.count(_ == Study)}")
-            println(f"playedHand: $playedHand")
             def withinLimit = (playedHand.count(_ == Study) < 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
             def isNotWorking = !playedHand.exists(_.isInstanceOf[Profession]) || playedHand.hasBonus(Bonus.StudyWhileWorking)
             withinLimit && isNotWorking
@@ -175,8 +173,6 @@ extension (state: State)
      * The method keeps skipping until it finds a player that does NOT have
      * a skip-malus, or until it has checked everyone once (to avoid infinite loops).
      *
-     * @param state
-     *   The current state (hands, board, piles, queue, log).
      * @return
      *   A new state where:
      *     - `playerQueue` has been rotated to the next valid player
@@ -184,8 +180,6 @@ extension (state: State)
      *     - all other fields remain the same except the updated board/piles.
      */
     def toNextPlayer: State =
-        // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
-        // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
         val State(hands, board, cardPiles, playerQueue, log) = state
         if playerQueue.isEmpty then state
         else

@@ -123,7 +123,6 @@ class Logic extends StateMachine[Event, State, View]:
                             state.copy(
                                 hands = newHands,
                                 cardPiles = cardPiles.discard(card),
-                                playerQueue = toNextPlayer(state).playerQueue,
                                 log = log.write(userId)(event)
                             ).toNextPlayer
                         )
