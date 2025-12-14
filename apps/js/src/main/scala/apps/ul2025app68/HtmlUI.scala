@@ -35,7 +35,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   override def render(userId: UserId, view: View): Frag =
     view.phaseView match
       case gv: PhaseView.GameView => 
-        val fullBoard = createFullBoardParallel(gv)
+        val fullBoard = createFullBoard(gv)
         val turnMessage: String = if gv.turnOf == userId then "your" else gv.turnOf + "'s"
         frag(
           div(
@@ -254,26 +254,26 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     (userId) <- view.board.keySet
                 } yield p(userId + ": " + smilesList(userId) + " smiles.")).toSeq
             )
-        )
+        ),
     )
     
   
   /** Transforms game view board into a structured FullBoard representation */
-  private def createFullBoardParallel(view: PhaseView.GameView): FullBoard =
-    view.board.map { (userId, board) =>
+  private def createFullBoard(view: PhaseView.GameView): FullBoard =
+    view.board.map { (userId, playedHand) =>
       userId ->
       PlayerBoard(
-        board.count { case Card.Flirt => true; case _ => false },
-        board.count { case Card.Child => true; case _ => false },
-        board.collect { case m: Card.Money => m },
-        board.collectFirst { case p: Card.Profession => p },
-        board.count { case Card.Study => true; case _ => false },
-        board.count { case Card.Pet => true; case _ => false },
-        board.collect { case Card.MalusCard(malus) => malus },
-        board.collect { case s: Card.Special => s },
-        board.collect { case s: Card.House => s },
-        board.count { case Card.Travel(_) => true; case _ => false },
-        board.count { case Card.Marriage => true; case _ => false },
+        playedHand.count { case Card.Flirt => true; case _ => false },
+        playedHand.count { case Card.Child => true; case _ => false },
+        playedHand.collect { case m: Card.Money => m },
+        playedHand.collectFirst { case p: Card.Profession => p },
+        playedHand.count { case Card.Study => true; case _ => false },
+        playedHand.count { case Card.Pet => true; case _ => false },
+        playedHand.collect { case Card.MalusCard(malus) => malus },
+        playedHand.collect { case s: Card.Special => s },
+        playedHand.collect { case s: Card.House => s },
+        playedHand.count { case Card.Travel(_) => true; case _ => false },
+        playedHand.count { case Card.Marriage => true; case _ => false },
         view.board(userId).map(card => card.smileValue).sum
       )
     }
