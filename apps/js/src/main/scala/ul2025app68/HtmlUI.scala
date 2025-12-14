@@ -233,19 +233,19 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   
   /** Renders the victory/loss screen */
   private def renderEndScreen(view: PhaseView.VictoryView, userId: UserId): Frag =
-    val smilesList = view.board.map((id,_) => id -> view.board.countSmiles(id))
+    val smilesList = view.board.map((id,_) => id -> view.board(id).map(card => card.smileValue).sum)
     div(
         if view.winners.contains(userId) then
         div(
             cls := "section",
             h1("Congratulations, YOU WON!"),
-            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board.countSmiles(view.winners.head) + " Smiles.")
+            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board(view.winners.head).map(card => card.smileValue).sum + " Smiles.")
         )
         else
         div(
             cls := "section",
             h1("You... Lost..."),
-            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board.countSmiles(view.winners.head) + " Smiles.")
+            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board(view.winners.head).map(card => card.smileValue).sum + " Smiles.")
         )
         ,
         div(
