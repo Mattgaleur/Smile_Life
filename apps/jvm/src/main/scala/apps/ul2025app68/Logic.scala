@@ -297,7 +297,8 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
         List.fill(mediumHouseCount)(Card.House(3)),
         List.fill(bigHouseCount)(Card.House(4)),
         List.fill(travelCount)(Card.Travel(3)),
-        professions
+        professions,
+        specials
     ).flatten
 
     val shuffled = scala.util.Random.shuffle(pile)
