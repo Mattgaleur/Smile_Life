@@ -96,6 +96,9 @@ case class State(
 
 type Log = List[String]        
 
+object Log:
+    val separation = "----------------------------------"
+
 case class PlayerBoard(
     flirt: Int,
     child: Int,

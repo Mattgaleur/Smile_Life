@@ -36,14 +36,15 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     view.phaseView match
       case gv: PhaseView.GameView => 
         val fullBoard = createFullBoard(gv)
-        val turnMessage: String = if gv.turnOf == userId then "your" else gv.turnOf + "'s"
+        val turnMessage = if gv.turnOf == userId then p(b("it is your turn"))
+          else p.apply("it is ",b(gv.turnOf),"'s turn")
         frag(
           div(
             cls := "section",
             h1("SmileLife"),
             renderKillGame,
             renderLogs(gv.log),
-            p("it is " + turnMessage + " turn")
+            turnMessage
           ),
           renderPileButtons(userId, gv),
           renderBoard(fullBoard),
@@ -61,9 +62,17 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   
   /** Renders expandable log section showing game history */
   private def renderLogs(logs: Seq[String]): Frag =
-    details(
-      summary("Game Logs"),
-      ul(logs.map(log => li(log))*)
+    div(
+      p(
+        b("Last Action: "),
+        logs.find(_ != Log.separation) match
+          case Some(value) => value
+          case None => ""
+      ),
+      details(
+        summary("Game Logs"),
+        ul(logs.map(log => li(log))*)
+      )
     )
   
   /** Renders pile selection buttons (pile and trash) */
@@ -117,6 +126,13 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         case 2 => "Married Twice?!"
         case _ => "Error: Invalid Marriage State"
 
+    def showStudy(board: PlayerBoard): String =
+      if board.special.exists(_.bonus == Bonus.DoubleStudy) then
+        board.study.toString + " (×2)"
+      else
+        board.study.toString
+      
+
     div(
       cls := "playerBoard",
       div(
@@ -128,7 +144,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         cls := "statsRow",
         p("Flirts: ", board.flirt.toString),
         p("Child: ", board.child.toString),
-        p("Study: ", board.study.toString),
+        p("Study: ", showStudy(board)),
         p("Pet: ", board.pet.toString),
         p("Travels: ", board.travels.toString),
         p("Status: ", getStatus(board))

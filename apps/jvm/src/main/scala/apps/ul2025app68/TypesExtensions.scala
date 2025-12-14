@@ -243,13 +243,13 @@ extension (log: Log)
                 case Card.MalusCard(malus) => 
                     f"$userId used $malus on $selectedUser" 
                 case Card.Travel(price) =>
-                    f"$userId planned a Travel for $price"
+                    f"$userId planned a Travel for $$$price"
                 case Card.House(price) =>
-                    f"$userId bought a House for $price"
+                    f"$userId bought a House for $$$price"
                 case Card.Special(bonus, name) =>
-                    f"$userId played the $name"
+                    f"$userId played the $name card"
                 case Card.Money(amount, used) =>
-                    f"$userId earned $amount Money"
+                    f"$userId earned $$$amount worth of Money"
                 case Card.Profession(studyRequired, salary, bonus, name) =>
                     f"$userId became a $name"
                 case Card.Flirt =>
@@ -264,6 +264,6 @@ extension (log: Log)
                     f"$userId bought a Pet"
         event match
             case Event.Discard(_) | Event.PlayCard(_, _) | Event.QuitJob =>
-                "----------------------------------" :: message :: log
+                Log.separation :: message :: log
             case Event.PickCard(_) | Event.EndGame =>
                 message :: log
