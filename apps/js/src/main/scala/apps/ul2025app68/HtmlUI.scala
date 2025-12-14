@@ -1,4 +1,4 @@
-package apps.ul2025app68
+package apps.apps.ul2025app68
 
 import cs214.webapp.*
 import cs214.webapp.client.*
