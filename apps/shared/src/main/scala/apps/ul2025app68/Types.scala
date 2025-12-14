@@ -25,9 +25,6 @@ enum Bonus:
     case DoubleStudy
     case DoubleMarriage
 
-sealed trait Expenses:
-    def price: Int
-
 enum Card:
     case Flirt
     case Marriage
@@ -35,8 +32,8 @@ enum Card:
     case Study
     case Pet
     case MalusCard(malus: Malus)
-    case Travel(price: Int) extends Card with Expenses
-    case House(price: Int) extends Card with Expenses
+    case Travel(price: Int)
+    case House(price: Int)
     case Special(bonus: Bonus, name: String)
     case Money(amount: Int, used: Boolean = false)
     case Profession(studyRequired: Int, salary: Int, bonus: Option[Seq[Bonus]] = None, name: String)
@@ -55,13 +52,15 @@ enum Card:
             isJobLess && enoughStudy
 
         case Study =>
-            def withinLimit = (playedHand.count(_ == Study) <= 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
+            println(f"Study count: ${playedHand.count(_ == Study)}")
+            println(f"playedHand: $playedHand")
+            def withinLimit = (playedHand.count(_ == Study) < 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
             def isNotWorking = !playedHand.exists(_.isInstanceOf[Profession]) || playedHand.hasBonus(Bonus.StudyWhileWorking)
             withinLimit && isNotWorking
 
         case Flirt => 
             val flirts = playedHand.count(_ == Flirt)
-            def withinLimit = (flirts <= 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+            def withinLimit = (flirts < 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
             def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
             withinLimit && isNotMarried
             
@@ -80,7 +79,9 @@ enum Card:
                 case Malus.Disease => true
                 case Malus.Accident => true
                 case Malus.BurnOut => playedHand.exists(_.isInstanceOf[Profession])
-                case Malus.Tax => playedHand.exists(_.isInstanceOf[Money])
+                case Malus.Tax => playedHand.exists:
+                    case m: Money => !m.used
+                    case _ => false
                 case Malus.Divorce => playedHand.exists(_ == Marriage)
                 case Malus.Dismissal => playedHand.exists(_.isInstanceOf[Profession])
                 case Malus.TerroristAttack => playedHand.exists(_ == Child)

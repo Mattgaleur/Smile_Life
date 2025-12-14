@@ -68,20 +68,29 @@ class Logic extends StateMachine[Event, State, View]:
                             case Malus.Disease => placeCard(card, selectedUser, board)
                             case Malus.Accident => placeCard(card, selectedUser, board)
                             case Malus.BurnOut => placeCard(card, selectedUser, board)
-                            case Malus.Tax => removeCard(_.isInstanceOf[Money], selectedUser, board)
-                            case Malus.Divorce => removeCard(_ == Marriage, selectedUser, board)
-                            case Malus.Dismissal => removeCard(_.isInstanceOf[Profession], selectedUser, board)
-                            case Malus.TerroristAttack => removeCard(_ == Child, selectedUser, board, all = true)
-                            case Malus.RepeatYear => removeCard(_ == Study, selectedUser, board)
-                        case expenses: Expenses =>
-                            val newPlayedHandOpt = playerHand.handAfterPaying(expenses.price)
+                            case Malus.Tax => removeCard(selectedUser, board):
+                                case m: Money => !m.used
+                                case _ => false
+                            case Malus.Divorce => removeCard(selectedUser, board)(_ == Marriage)
+                            case Malus.Dismissal => removeCard(selectedUser, board)(_.isInstanceOf[Profession])
+                            case Malus.TerroristAttack => removeCard(selectedUser, board, all = true)(_ == Child)
+                            case Malus.RepeatYear => removeCard(selectedUser, board)(_ == Study)
+                        case Travel(price) =>
+                            val newPlayedHandOpt = playerHand.handAfterPaying(price)
                             if userId != selectedUser then
                                 throw IllegalMoveException("You should play this card on yourself")
-                            else if newPlayedHandOpt.isEmpty then
-                                throw IllegalMoveException("You don't have enough money")
+                            else if newPlayedHandOpt.isEmpty && !playerHand.hasBonus(Bonus.FreeTravel) then
+                                throw IllegalMoveException("You don't have enough money to Travel")
                             else
-                                board.updated(userId, newPlayedHandOpt.get)
-
+                                board.updated(userId, card +: newPlayedHandOpt.get)
+                        case House(price) =>
+                            val newPlayedHandOpt = playerHand.handAfterPaying(price)
+                            if userId != selectedUser then
+                                throw IllegalMoveException("You should play this card on yourself")
+                            else if newPlayedHandOpt.isEmpty && !playerHand.hasBonus(Bonus.FreeHouse) then
+                                throw IllegalMoveException("You don't have enough money by this House")
+                            else
+                                board.updated(userId, card +: newPlayedHandOpt.get)
                         case _ =>
                             if userId != selectedUser then
                                 throw IllegalMoveException("You should play this card on yourself")
@@ -151,8 +160,12 @@ class Logic extends StateMachine[Event, State, View]:
                 val playerHand: PlayedHand = board.get(userId).get
                 if !playerHand.exists(_.isInstanceOf[Profession]) then
                     throw IllegalMoveException("You can't quit your job, you don't have one")
+                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                    throw IllegalMoveException("You can't pick a card, you already did")
+                else if nbOfCardsInHands != MIN_NUMBER_OF_CARD_IN_HAND then
+                    throw IllegalMoveException(f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal")
                 else 
-                    val newBoard = removeCard(_.isInstanceOf[Profession], userId, board)
+                    val newBoard = removeCard(userId, board)(_.isInstanceOf[Profession])
                     Seq(
                         Render(
                             toNextPlayer(
@@ -311,7 +324,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
   */
 def placeCard(card: Card, userId: UserId, board: Board): Board =
     board.updated(
-        userId, board.get(userId).get.appended(card)
+        userId, card +: board.get(userId).get 
     )
 
 
@@ -337,13 +350,13 @@ def placeCard(card: Card, userId: UserId, board: Board): Board =
   * @return
   *   A new board where the matching card(s) have been removed from `userId`'s played hand.
   */
-def removeCard(identifier: Card => Boolean, userId: UserId, board: Board, all: Boolean = false): Board =
+def removeCard(userId: UserId, board: Board, all: Boolean = false)(identifier: Card => Boolean): Board =
     val playedHand = board.get(userId).get 
     if !playedHand.exists(identifier) then
-        throw IllegalMoveException("This Malus can't be applied to this player")
+        throw IllegalMoveException("An error occured, you can't remove the card you want")
     else if all then
         board.updated(
-            userId, playedHand.filter(identifier)
+            userId, playedHand.filterNot(identifier)
         )
     else
         val index = playedHand.indexWhere(identifier)
