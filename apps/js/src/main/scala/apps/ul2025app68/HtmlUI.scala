@@ -77,6 +77,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   
   /** Renders pile selection buttons (pile and trash) */
   private def renderPileButtons(userId: UserId, view: PhaseView.GameView): Frag =
+    require(view.defaultPileSize >= 0, "Pile size cannot be negative")
     val yourTurn = view.turnOf == userId
     div(
       cls := "section",
@@ -120,6 +121,8 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   /** Renders a single player's board state */
   private def renderPlayerBoard(userId: UserId, board: PlayerBoard): Frag =
     def getStatus(board: PlayerBoard): String =
+      require(board.marriage >= 0 && board.marriage <= 2, 
+      "Marriage state must be 0-2")
       board.marriage match
         case 0 => "Single"
         case 1 => "Married"
@@ -166,6 +169,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
   /** Renders an expandable section for card lists */
   private def renderExpandable(title: String, cards: Seq[String]): Frag =
+    require(title.nonEmpty, "Title cannot be empty")
     if cards.isEmpty then
       p(s"No $title cards")
     else
@@ -249,6 +253,9 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   
   /** Renders the victory/loss screen */
   private def renderEndScreen(view: PhaseView.VictoryView, userId: UserId): Frag =
+    val winners = view.winners
+    require(view.winners.nonEmpty, "There must be at least one winner")
+    require(winners.forall(view.board.keySet.contains))
     val smilesList = view.board.map((id,_) => id -> view.board(id).map(card => card.smileValue).sum)
     div(
         if view.winners.contains(userId) then
@@ -276,7 +283,6 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         renderLogs(view.log)
       )
     )
-    
   
   /** Transforms game view board into a structured FullBoard representation */
   private def createFullBoard(view: PhaseView.GameView): FullBoard =
@@ -299,7 +305,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
     }
   
   /** Converts a card to its display string */
-  private def cardName(card: Card): String =
+  private def cardName(card: Card): String = {
     card match
       case Card.Flirt | Card.Marriage | Card.Child | Card.Study | Card.Pet =>
         card.toString
@@ -317,6 +323,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         "Used Money: " + amount
       case Card.Profession(studyRequired, salary, _, name) =>
         name + " " + studyRequired + "🎓, " + salary + "💰"
+  }.ensuring(_.nonEmpty, "Card name cannot be empty")
   
   /** Converts a bonus to its display string */
   private def bonusName(bonus: Bonus): String =
