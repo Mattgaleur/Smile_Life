@@ -15,8 +15,8 @@ import apps.ul2025app68.PhaseView.*
 import scala.languageFeature.experimental.macros
 import scala.collection.immutable.Queue
 
-given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
-val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
+val DEFAULT_CARD_IN_HAND: Int = 5
+val CARDS_IN_HAND_AFTER_DRAW: Int = 6
 
 class Logic extends StateMachine[Event, State, View]:
     val appInfo: AppInfo = AppInfo(
@@ -55,10 +55,10 @@ class Logic extends StateMachine[Event, State, View]:
                 if !cardsInHand.contains(card) || !card.canBePlaced(playerHand) then
                     throw IllegalMoveException("You can't play this card")
 
-                else if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands == DEFAULT_CARD_IN_HAND then
                     throw IllegalMoveException("You should draw a card first")
 
-                else if nbOfCardsInHands != MAX_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands != CARDS_IN_HAND_AFTER_DRAW then
                     throw IllegalStateException(
                         f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal"
                     )
@@ -112,9 +112,9 @@ class Logic extends StateMachine[Event, State, View]:
                     )
 
             case Event.Discard(card) =>
-                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then
+                if nbOfCardsInHands == DEFAULT_CARD_IN_HAND then
                     throw IllegalMoveException("You haven't picked a card yet")
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands == CARDS_IN_HAND_AFTER_DRAW then
                     val newHands: Map[UserId, Hand] = hands.updated(
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
                     )
@@ -133,7 +133,7 @@ class Logic extends StateMachine[Event, State, View]:
                     )
 
             case Event.PickCard(isDefaultPile) =>
-                if nbOfCardsInHands == MIN_NUMBER_OF_CARD_IN_HAND then cardPiles.pickCard(isDefaultPile) match
+                if nbOfCardsInHands == DEFAULT_CARD_IN_HAND then cardPiles.pickCard(isDefaultPile) match
                     case None =>
                         throw IllegalMoveException("You can't pick a card from an empty pile")
 
@@ -147,7 +147,7 @@ class Logic extends StateMachine[Event, State, View]:
                                 )
                             )
                         )
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands == CARDS_IN_HAND_AFTER_DRAW then
                     throw IllegalMoveException("You can't pick a card, you already did")
                 else 
                     throw IllegalStateException(
@@ -157,9 +157,9 @@ class Logic extends StateMachine[Event, State, View]:
                 val playerHand: PlayedHand = board.get(userId).get
                 if !playerHand.exists(_.isInstanceOf[Profession]) then
                     throw IllegalMoveException("You can't quit your job, you don't have one")
-                else if nbOfCardsInHands == MAX_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands == CARDS_IN_HAND_AFTER_DRAW then
                     throw IllegalMoveException("You can't pick a card, you already did")
-                else if nbOfCardsInHands != MIN_NUMBER_OF_CARD_IN_HAND then
+                else if nbOfCardsInHands != DEFAULT_CARD_IN_HAND then
                     throw IllegalMoveException(f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal")
                 else 
                     val newBoard = board.removeCard(userId)(_.isInstanceOf[Profession])
@@ -195,7 +195,7 @@ class Logic extends StateMachine[Event, State, View]:
             case None =>
                 throw IllegalArgumentException(f"The given userId \"${userId}\" is unknown")
             case Some(hand) => 
-                val lastDiscard = if cardPiles.trashPile.isEmpty then None else Some(cardPiles.trashPile.head) // TEMPORARY eventuellement ajouter un type null?
+                val lastDiscard = if cardPiles.trashPile.isEmpty then None else Some(cardPiles.trashPile.head) 
                 View(GameView(board, hand, lastDiscard, playerQueue.head, cardPiles.defaultPile.length, log))
         
 

@@ -28,7 +28,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
       sm.transition(state)(state.getUserToPlay, event).getState
 
     def getCardToPlay(using rand: Random): Card =
-      state.hands.get(getUserToPlay).get.apply(rand.nextInt(MAX_NUMBER_OF_CARD_IN_HAND))
+      state.hands.get(getUserToPlay).get.apply(rand.nextInt(CARDS_IN_HAND_AFTER_DRAW))
 
     def getCardToPlay(index: Int): Card =
       state.hands.get(getUserToPlay).get.apply(index)
@@ -46,7 +46,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
 
   test("Initial State: all player have the right number of card"):
     initState.hands.foreach: (userId, hand) =>
-      assertEquals(hand.length, MIN_NUMBER_OF_CARD_IN_HAND)
+      assertEquals(hand.length, DEFAULT_CARD_IN_HAND)
 
   test("Initial State: the cards that the players have are removed from the DefaultPile"):
     val initPile = setPiles(rand)
@@ -97,7 +97,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     val p2 = USER_IDS(1)
 
     // p1 a 5 Flirt + 1 Flirt => 6 cartes
-    val handP1: Hand = Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ Flirt
+    val handP1: Hand = Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt) :+ Flirt
     val hands: Map[UserId, Hand] = Map(
       p1 -> handP1,
       p2 -> Vector.empty
@@ -121,8 +121,8 @@ class LogicTests extends WebappSuite[Event, State, View]:
 
     // La carte est posée
     assertEquals(newState.board.getOrElse(p1, Vector.empty), Vector(Flirt))
-    // La main de p1 revient à MIN_NUMBER_OF_CARD_IN_HAND
-    assertEquals(newState.hands(p1).length, MIN_NUMBER_OF_CARD_IN_HAND)
+    // La main de p1 revient à DEFAULT_CARD_IN_HAND
+    assertEquals(newState.hands(p1).length, DEFAULT_CARD_IN_HAND)
     // Le tour a tourné vers p2
     assertEquals(newState.playerQueue.head, p2)
   }
@@ -313,8 +313,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
   // SETPILES TESTS ###########################################################
 
   test("setPiles: generated Money and Profession cards have parameters in expected ranges") {
-    val size = 200
-    val piles = setPiles(rand, size)
+    val piles = setPiles(rand)
 
     piles.defaultPile.foreach {
       case Money(amount, _) =>
@@ -541,7 +540,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
 
     // p1 a exactement MAX cartes en main (5 + 1)
     val handP1: Hand =
-      Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ Flirt
+      Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt) :+ Flirt
     val handP2: Hand = Vector.empty
 
     val hands: Map[UserId, Hand] = Map(
@@ -562,7 +561,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     // La carte doit être posée sur le board de p1
     assertEquals(next.board.getOrElse(p1, Vector.empty), Vector(Flirt))
     // La main de p1 doit maintenant contenir MIN cartes
-    assertEquals(next.hands(p1).length, MIN_NUMBER_OF_CARD_IN_HAND)
+    assertEquals(next.hands(p1).length, DEFAULT_CARD_IN_HAND)
     // Le tour doit avoir tourné vers p2
     assertEquals(next.playerQueue.head, p2)
 
@@ -572,7 +571,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     val p2 = USER_IDS(1)
 
     val handP1: Hand =
-      Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ Flirt // 6 cartes
+      Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt) :+ Flirt // 6 cartes
     val hands = Map[UserId, Hand](
       p1 -> handP1,
       p2 -> Vector.empty
@@ -598,7 +597,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     val disease = Card.MalusCard(Malus.Disease)
 
     val handP1: Hand =
-      Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ disease // 5 Flirt + 1 Disease
+      Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt) :+ disease // 5 Flirt + 1 Disease
     val hands = Map[UserId, Hand](
       p1 -> handP1,
       p2 -> Vector.empty,
@@ -623,14 +622,14 @@ class LogicTests extends WebappSuite[Event, State, View]:
     assertEquals(next.board.getOrElse(p2, Vector.empty), Vector.empty)
 
     // p1 a bien joué une carte (sa main revient à MIN cartes)
-    assertEquals(next.hands(p1).length, MIN_NUMBER_OF_CARD_IN_HAND)
+    assertEquals(next.hands(p1).length, DEFAULT_CARD_IN_HAND)
 
   test("transition: QuitJob without profession throws IllegalMoveException") {
     assume(USER_IDS.nonEmpty)
     val p1 = USER_IDS(0)
 
     val hands: Map[UserId, Hand] = Map(
-        p1 -> (Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt) :+ Flirt) // 6 cards
+        p1 -> (Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt) :+ Flirt) // 6 cards
     )
 
     val board: Board = Map(
@@ -663,7 +662,7 @@ class LogicTests extends WebappSuite[Event, State, View]:
     )
 
     val hands: Map[UserId, Hand] = Map(
-        p1 -> (Vector.fill(MIN_NUMBER_OF_CARD_IN_HAND)(Flirt)), // 5 cards
+        p1 -> (Vector.fill(DEFAULT_CARD_IN_HAND)(Flirt)), // 5 cards
         p2 -> Vector.empty
     )
 

@@ -3,7 +3,6 @@ package apps.ul2025app68
 import cs214.webapp.UserId
 import scala.collection.immutable.Queue
 
-// Maluses
 enum Malus:
     case Disease 
     case Accident
@@ -12,7 +11,7 @@ enum Malus:
     case Divorce
     case Dismissal
     case TerroristAttack
-    case RepeatYear // bad translation for "redoublement" should be changed
+    case RepeatYear 
 
 enum Bonus:
     case MalusProtection(malus: Malus)
@@ -58,12 +57,11 @@ enum Card:
         
 type Hand = Vector[Card]
 
-type PlayedHand = // Or type Life ? Or type Deck ?
-    Vector[Card]                        
+type PlayedHand = Vector[Card]                        
 
 type Board = Map[UserId, PlayedHand]
 
-type Pile = List[Card] // Maybe setting Pile as a mutable class would make things simpler
+type Pile = List[Card] 
 
 case class CardPiles(
     val defaultPile: Pile,
@@ -75,7 +73,7 @@ enum Event:
     case PlayCard(card: Card, selectedUser: UserId)
     case PickCard(isDefaultPile: Boolean)
         // true -> DefaultPile
-        // false -> DiscardPile
+        // false -> TrashPile
     case QuitJob
     case EndGame
 

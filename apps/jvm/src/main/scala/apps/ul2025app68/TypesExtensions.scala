@@ -5,7 +5,65 @@ import cs214.webapp.UserId
 import scala.collection.immutable.Queue
 
 // ######### Card #########
+val MAX_NUMBER_OF_STUDY = 6
+val MAX_NUMBER_OF_FLIRT = 5
 extension (card: Card)
+
+    /** Determines whether this card can be legally placed in the given played hand.
+    *
+    * The rules depend on the concrete type of the card:
+    *
+    *  - [[Money]]:
+    *    Can be placed only if the hand already contains a [[Profession]]
+    *    whose salary is greater than or equal to the money amount.
+    *
+    *  - [[Profession]]:
+    *    Can be placed only if:
+    *      - the hand does not already contain another profession, and
+    *      - the number of [[Study]] cards (possibly doubled by
+    *        [[Bonus.DoubleStudy]]) meets the required study level.
+    *
+    *  - [[Study]]:
+    *    Can be placed only if:
+    *      - the number of study cards is below the limit (6), unless
+    *        [[Bonus.UnlimitedStudy]] is present, and
+    *      - the player is not currently working, unless
+    *        [[Bonus.StudyWhileWorking]] is present.
+    *
+    *  - [[Flirt]]:
+    *    Can be placed only if:
+    *      - the number of flirt cards is below the limit (5), unless
+    *        [[Bonus.UnlimitedFlirt]] is present, and
+    *      - the player is not married, unless
+    *        [[Bonus.FlirtWhileMarried]] is present.
+    *
+    *  - [[Marriage]]:
+    *    Can be placed only if:
+    *      - at least one [[Flirt]] is present, and
+    *      - no marriage is already present,
+    *      - unless [[Bonus.DoubleMarriage]] allows a second marriage.
+    *
+    *  - [[Child]]:
+    *    Can be placed only if the hand already contains a [[Marriage]].
+    *
+    *  - [[MalusCard]]:
+    *    Can be placed only if the corresponding malus is not protected
+    *    by a matching [[Bonus.MalusProtection]] and its application
+    *    conditions are satisfied (e.g. profession required for
+    *    dismissal or burn-out, marriage required for divorce, etc.).
+    *
+    *  - [[Pet]] and [[Special]]:
+    *    Can always be placed.
+    *
+    *  - [[House]] and [[Travel]]:
+    *    Can be placed only if:
+    *      - the corresponding free bonus is present, or
+    *      - the hand contains enough money to pay the price.
+    *
+    * @param playedHand the current hand into which the card would be placed
+    * @return true if the card can be placed according to the game rules,
+    *         false otherwise
+    */
     def canBePlaced(playedHand: PlayedHand): Boolean = card match
         case Money(amount,_) =>
             playedHand.collectFirst {case p: Profession => p} match
@@ -20,13 +78,13 @@ extension (card: Card)
             isJobLess && enoughStudy
 
         case Study =>
-            def withinLimit = (playedHand.count(_ == Study) < 6) || playedHand.hasBonus(Bonus.UnlimitedStudy)
+            def withinLimit = (playedHand.count(_ == Study) < MAX_NUMBER_OF_STUDY) || playedHand.hasBonus(Bonus.UnlimitedStudy)
             def isNotWorking = !playedHand.exists(_.isInstanceOf[Profession]) || playedHand.hasBonus(Bonus.StudyWhileWorking)
             withinLimit && isNotWorking
 
         case Flirt => 
             val flirts = playedHand.count(_ == Flirt)
-            def withinLimit = (flirts < 5) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
+            def withinLimit = (flirts < MAX_NUMBER_OF_FLIRT) || playedHand.hasBonus(Bonus.UnlimitedFlirt)
             def isNotMarried = !playedHand.exists(_ == Marriage) || playedHand.hasBonus(Bonus.FlirtWhileMarried)
             withinLimit && isNotMarried
             
@@ -75,11 +133,41 @@ extension (card: Card)
 
 // ######### PlayedHand #########
 extension (playedHand: PlayedHand)
+    /** Checks whether the playedHand provides the given bonus.
+    *
+    * A bonus is considered present if:
+    *  - it is granted by a [[Card.Profession]] currently in the hand, or
+    *  - it is granted by a [[Card.Special]] card in the hand.
+    *
+    * @param bonus the bonus to look for
+    * @return true if the bonus is present in the playedHand, false otherwise
+    */
     def hasBonus(bonus: Bonus): Boolean = playedHand.exists:
         case p: Card.Profession => p.bonus.isDefined && p.bonus.get.exists(_==bonus)
         case Card.Special(thatBonus, _) => thatBonus == bonus 
         case _ => false 
 
+    
+    /** Computes the state of the hand after paying the given amount of money.
+    *
+    * The payment is made by selecting a subset of unused [[Card.Money]] cards
+    * such that:
+    *  - the total paid amount is greater than or equal to `amountToPay`,
+    *  - the overpayment is minimal,
+    *  - and, in case of a tie, the number of money cards used is minimal.
+    *
+    * The selected money cards are marked as `used` in the resulting hand.
+    * All other cards remain unchanged.
+    *
+    * If the amount is zero or negative, the hand is returned unchanged.
+    * If there is not enough unused money in the hand to pay the amount,
+    * `None` is returned.
+    *
+    * @param amountToPay the amount of money to pay
+    * @return
+    *   - `Some(updatedHand)` if the payment can be made
+    *   - `None` if the hand cannot pay the required amount
+    */
     def handAfterPaying(amountToPay: Int): Option[PlayedHand] = 
         if amountToPay <= 0 then
             Some(playedHand)
@@ -129,36 +217,69 @@ extension (playedHand: PlayedHand)
 
 // ######### CardPiles #########
 extension (cardPiles: CardPiles)
+    /** Discards a card by moving it to the trash pile.
+    *
+    * @param card the card to discard
+    * @return a new [[CardPiles]] with the card added on top of the trash pile
+    */
     def discard(card: Card): CardPiles =
         cardPiles.copy(
             trashPile = card :: cardPiles.trashPile
         )
 
+    /** Picks the top card from either the default pile or the trash pile.
+        *
+        * @param fromDefaultPile if true, pick from the default pile;
+        *                        otherwise pick from the trash pile
+        * @return
+        *   - `Some((card, updatedPiles))` if the chosen pile is non-empty
+        *   - `None` if the chosen pile is empty
+        */
     def pickCard(fromDefaultPile: Boolean): Option[(Card, CardPiles)] =
         val CardPiles(defaultPile, trashPile) = cardPiles
         if fromDefaultPile && defaultPile.nonEmpty then
             Some(
-                defaultPile.head, 
+                defaultPile.head,
                 cardPiles.copy(defaultPile = defaultPile.tail)
-            ) 
+            )
         else if !fromDefaultPile && trashPile.nonEmpty then
             Some(
-                trashPile.head, 
+                trashPile.head,
                 cardPiles.copy(trashPile = trashPile.tail)
-            ) 
-        else 
+            )
+        else
             None
-    
-    def giveCardsTo(clients: Seq[UserId])(using nbOfCards: Int): (Map[UserId, Hand], CardPiles) =
+
+    /** Deals cards to the given clients from the default pile.
+        *
+        * Each client receives [[DEFAULT_CARD_IN_HAND]] cards, in the order
+        * provided by the default pile. Cards are assigned sequentially
+        * following the order of `clients`.
+        *
+        * The remaining cards stay in the default pile, and the trash pile
+        * is reset to empty.
+        *
+        * @param clients the users to whom cards are dealt
+        * @return a tuple containing:
+        *   - a map from [[UserId]] to the dealt [[Hand]]
+        *   - the updated [[CardPiles]]
+        */
+    def giveCardsTo(clients: Seq[UserId]): (Map[UserId, Hand], CardPiles) =
         val CardPiles(defaultPile, trashPile) = cardPiles
         val hands: Map[UserId, Hand] =
-            clients
-                .zip(defaultPile.grouped(nbOfCards))   // gives (userId, cards)
-                .map { case (id, cards) => id -> cards.toVector }
-                .toMap
+        clients
+            .zip(defaultPile.grouped(DEFAULT_CARD_IN_HAND))
+            .map { case (id, cards) => id -> cards.toVector }
+            .toMap
 
-        val piles: CardPiles = CardPiles(defaultPile.drop(clients.length * nbOfCards), List.empty)
+        val piles: CardPiles =
+        CardPiles(
+            defaultPile.drop(clients.length * DEFAULT_CARD_IN_HAND),
+            List.empty
+        )
+
         (hands, piles)
+
 
 // ######### State #########
 extension (state: State)
@@ -211,8 +332,6 @@ extension (state: State)
      *
      * @param userId
      *   The player who is trying to act.
-     * @param playerQueue
-     *   The queue representing turn order. The head is the current player.
      * @return
      *   True iff `userId` is the head of the queue.
      */
@@ -222,6 +341,19 @@ extension (state: State)
 
 // ######### Log #########
 extension (log: Log)
+    /** Appends a human-readable log entry describing a user event.
+    *
+    * The method formats a textual message based on the given [[Event]]
+    * and prepends it to the current log.
+    *
+    * A visual separation marker is inserted before the message when
+    * the event ends the current player's turn. This helps group log
+    * entries by turn for readability.
+    *
+    * @param userId the user who triggered the event
+    * @param event the event to log
+    * @return a new [[Log]] with the formatted entry prepended
+    */
     def write(userId: UserId)(event: Event): Log =
         val message = event match
             case Event.Discard(card) => 
