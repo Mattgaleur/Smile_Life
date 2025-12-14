@@ -304,7 +304,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
       case Bonus.MalusProtection(mal) =>
         malusName(mal) + " resistant"
       case Bonus.FreeHouse =>
-        "🏠 One Free House"
+        "🏠 Free Houses"
       case Bonus.FreeTravel =>
         "✈️ Free Travels"
       case Bonus.UnlimitedFlirt =>
