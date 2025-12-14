@@ -60,11 +60,11 @@ class WireTests extends WebappSuite[Event, State, View]:
                 hand: Hand,
                 lastDiscard: Option[Card],
                 turnOf: UserId,
-                drawPileSize: Int,
+                defaultPileSize: Int,
                 log: Log
             ) =>
                 Try {View(PhaseView.GameView(
-                    board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log
+                    board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, defaultPileSize: Int, log: Log
                 ))}.isSuccess
             }
         )
