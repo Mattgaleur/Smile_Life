@@ -3,18 +3,81 @@ package apps.ul2025app68
 import cs214.webapp.*
 import cs214.webapp.Action
 import cs214.webapp.utils.WebappSuite
-
-import scala.util.Random
+import org.scalacheck.{Prop, Test}
 import cs214.webapp.server.StateMachine
+import scala.util.Random
+
 import apps.ul2025app68.PhaseView.GameView
 import apps.ul2025app68.PhaseView.VictoryView
 import apps.ul2025app68.Card.*
+import scala.util.Try
 
 class WireTests extends WebappSuite[Event, State, View]:
 
     val sm = Logic()
 
-    test("Event Wire: For cards that has no attributes"):
+    def assertProp[A](prop: Prop): Unit =
+        if (!Test.check(Test.Parameters.default, prop).passed) then
+            val result = Test.check(Test.Parameters.default, prop)
+            throw new AssertionError(
+                "ScalaCheck property failed!\n" + 
+                f"Message: ${result.toString()}"
+            )
+
+    test("Card Wire: Encoding and Decoding tests with ScalaCheck"):
+        assertProp(
+            Prop.forAll { (card: Card) =>
+                Try {testWire(CardWire)(card)}.isSuccess
+            }
+        )
+
+    test("Event Wire: Event.PlayCard encoding works"):
+        assertProp(
+            Prop.forAll { (card: Card, userId: UserId) =>
+                Try {Event.PlayCard(card, userId).testEventWire}.isSuccess
+            }
+        )
+
+    test("Event Wire: Event.Discard encoding works"):
+        assertProp(Prop.forAll { (card: Card) =>
+            Try {Event.Discard(card).testEventWire}.isSuccess
+        })
+
+    test("Event Wire: Event.PickCard encoding works"):
+        Event.PickCard(true).testEventWire
+        Event.PickCard(false).testEventWire
+    
+    test("Event Wire: Event.QuitJob encoding works"):
+        Event.QuitJob.testEventWire
+
+    test("Event Wire: Event.EndGame encoding works"):
+        Event.EndGame.testEventWire
+
+    test("View Wire: PhaseView.GameView enconding works"):
+        assertProp(
+            Prop.forAll { (
+                board: Board,
+                hand: Hand,
+                lastDiscard: Option[Card],
+                turnOf: UserId,
+                drawPileSize: Int,
+                log: Log
+            ) =>
+                Try {View(PhaseView.GameView(
+                    board: Board, hand: Hand, lastDiscard: Option[Card], turnOf: UserId, drawPileSize: Int, log: Log
+                ))}.isSuccess
+            }
+        )
+
+
+    test("View Wire: PhaseView.Victory enconding works"):
+        assertProp(
+            Prop.forAll { (winners: Seq[UserId]) =>
+                Try {View(PhaseView.VictoryView(winners: Seq[UserId]))}.isSuccess
+            }
+        )
+
+    test("Legacy Event Wire: For cards that has no attributes"):
         val seed = 2
         val rand = new Random(seed)
         val nbOfTest = 10
@@ -22,7 +85,6 @@ class WireTests extends WebappSuite[Event, State, View]:
         val randomCards =
             List.fill(5)(Card.fromOrdinal(rand.nextInt(5)))
         
-        // println("Discard and PlayCard Tests")
         for card <- randomCards do
             Event.Discard(card).testEventWire
             Event.PlayCard(card, rand.nextString(10)).testEventWire
@@ -31,15 +93,11 @@ class WireTests extends WebappSuite[Event, State, View]:
             List.fill(5)(Card.fromOrdinal(rand.nextInt(5)))
         )
 
-        // println("PickCard Tests")
         Event.PickCard(true).testEventWire
         Event.PickCard(false).testEventWire
 
-        // for cards <- listOfRandomCardsList do // Maybe Useful for later implementation of PickCards
-        //     Event.PickCard(DefaultPile(cards)).testEventWire
-        //     Event.PickCard(DiscardPile(cards)).testEventWire
 
-    test("Card Wire: For Money and Profession"):
+    test("Legacy Card Wire: For Money and Profession"):
         val seed = 2
         val rand = new Random(seed)
         val randomInts: List[List[Int]] =
@@ -59,7 +117,7 @@ class WireTests extends WebappSuite[Event, State, View]:
             assert(jobResult.isSuccess)
             assert(jobResult.get == job)
 
-    test("View Wire: For cards that has no attributes"):
+    test("Legacy View Wire: For cards that has no attributes"):
         val seed = 2
         val rand = Random(seed)
         val nbOfSample = 10
@@ -88,7 +146,8 @@ class WireTests extends WebappSuite[Event, State, View]:
                 listOfRandomCardsVector(rand.nextInt(10)),
                 None,
                 rand.nextString(5),
-                rand.nextInt()
+                rand.nextInt(),
+                log = List.empty
             )).testViewWire
 
             View(VictoryView(winners))
