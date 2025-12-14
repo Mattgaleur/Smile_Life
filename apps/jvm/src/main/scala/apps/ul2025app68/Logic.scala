@@ -213,7 +213,7 @@ class Logic extends StateMachine[Event, State, View]:
   * @return
   *   A `CardPile.DefaultPile` instance containing a list of randomly generated cards.
   */
-def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
+def setPiles(rand: Random = Random): CardPiles =
     val studyCount = 28
     val moneyCount = 10 // per salary level
     val flirtCount = 20
@@ -300,8 +300,7 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
         specials
     ).flatten
 
-    val shuffled = scala.util.Random.shuffle(pile)
-
+    val shuffled = rand.shuffle(pile)
     CardPiles(shuffled, List.empty)        
 
 
