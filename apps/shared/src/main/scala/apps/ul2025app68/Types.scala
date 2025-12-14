@@ -63,23 +63,6 @@ type PlayedHand = // Or type Life ? Or type Deck ?
 
 type Board = Map[UserId, PlayedHand]
 
-extension (board: Board)
-    /** 
-     * Count the number of Smiles for a specific player in the game. 
-     * ("Smiles" is the name for points, and the player with the most number of Smiles win)
-     *
-     * @param board
-     *     A map that links each player with the cards they have played during the game.
-     *
-     * @param userId
-     *     The user for which we want to calculate the number of Smiles.
-     * 
-     * @return
-     *   A Map associating each player with their number of points.
-    */
-    def countSmiles(userId: UserId): Int =
-        board(userId).map(card => card.smileValue).sum
-
 type Pile = List[Card] // Maybe setting Pile as a mutable class would make things simpler
 
 case class CardPiles(

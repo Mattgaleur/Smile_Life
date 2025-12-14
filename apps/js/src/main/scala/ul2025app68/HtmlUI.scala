@@ -274,7 +274,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
         board.collect { case s: Card.House => s },
         board.count { case Card.Travel(_) => true; case _ => false },
         board.count { case Card.Marriage => true; case _ => false },
-        view.board.countSmiles(userId)
+        view.board(userId).map(card => card.smileValue).sum
       )
     }
   

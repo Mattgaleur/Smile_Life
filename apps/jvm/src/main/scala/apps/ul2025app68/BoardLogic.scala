@@ -63,7 +63,7 @@ extension (board: Board)
      */
     def countSmilesMap: Map[UserId, Int] =
         board.keySet.map(userId =>
-            (userId, board.countSmiles(userId))
+            (userId, board(userId).map(card => card.smileValue).sum)
         ).toMap
         
     /** Checks whether a given player currently has a "skip turn" malus.
