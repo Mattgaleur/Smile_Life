@@ -223,42 +223,47 @@ extension (state: State)
 // ######### Log #########
 extension (log: Log)
     def write(userId: UserId)(event: Event): Log =
-        event match
+        val message = event match
             case Event.Discard(card) => 
-                f"$userId discarded a ${card.productPrefix} card" :: log
+                f"$userId discarded a ${card.productPrefix} card"
 
             case Event.PickCard(isDefaultPile) =>
                 if isDefaultPile then
-                    f"$userId drew a card from the Pile" :: log
+                    f"$userId drew a card from the Pile"
                 else 
-                    f"$userId drew a card from the Trash Pile" :: log
+                    f"$userId drew a card from the Trash Pile"
 
             case Event.QuitJob =>
-                f"$userId decided to quit his job" :: log
+                f"$userId decided to quit his job"
 
             case Event.EndGame =>
-                f"$userId is tired of playing, he ended the game" :: log
+                f"$userId is tired of playing, he ended the game"
 
             case Event.PlayCard(card, selectedUser) => card match
                 case Card.MalusCard(malus) => 
-                    f"$userId used $malus on $selectedUser" :: log 
+                    f"$userId used $malus on $selectedUser" 
                 case Card.Travel(price) =>
-                    f"$userId planned a Travel for $price" :: log
+                    f"$userId planned a Travel for $price"
                 case Card.House(price) =>
-                    f"$userId bought a House for $price" :: log
+                    f"$userId bought a House for $price"
                 case Card.Special(bonus, name) =>
-                    f"$userId played the $name" :: log
+                    f"$userId played the $name"
                 case Card.Money(amount, used) =>
-                    f"$userId earned $amount Money" :: log
+                    f"$userId earned $amount Money"
                 case Card.Profession(studyRequired, salary, bonus, name) =>
-                    f"$userId became a $name" :: log
+                    f"$userId became a $name"
                 case Card.Flirt =>
-                    f"$userId decided to Flirt" :: log
+                    f"$userId decided to Flirt"
                 case Card.Marriage =>
-                    f"$userId married a random person, congrats!" :: log
+                    f"$userId married a random person, congrats!"
                 case Card.Child =>
-                    f"$userId had a child with his partner" :: log
+                    f"$userId had a child with his partner"
                 case Card.Study =>
-                    f"$userId spent one year to Study" :: log
+                    f"$userId spent one year to Study"
                 case Card.Pet =>
-                    f"$userId bought a Pet" :: log
+                    f"$userId bought a Pet"
+        event match
+            case Event.Discard(_) | Event.PlayCard(_, _) | Event.QuitJob =>
+                "----------------------------------" :: message :: log
+            case Event.PickCard(_) | Event.EndGame =>
+                message :: log
