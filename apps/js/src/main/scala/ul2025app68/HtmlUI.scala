@@ -80,7 +80,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
           cls := "pile",
           if yourTurn then onclick := { () => sendEvent(Event.PickCard(true)) }
           else frag(),
-          p("Pile")
+          p("Pile: " + view.drawPileSize + " Cards Left")
         ),
         button(
           cls := "trash",
@@ -233,18 +233,30 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
   
   /** Renders the victory/loss screen */
   private def renderEndScreen(view: PhaseView.VictoryView, userId: UserId): Frag =
-    if view.winners.contains(userId) then
-      div(
-        cls := "section",
-        h1("Congratulations, YOU WON!"),
-        h2("Players " + view.winners.mkString(", ") + " won!")
-      )
-    else
-      div(
-        cls := "section",
-        h1("You... Lost..."),
-        h2("Players " + view.winners.mkString(", ") + " won!")
-      )
+    val smilesList = view.board.map((id,_) => id -> view.board.countSmiles(id))
+    div(
+        if view.winners.contains(userId) then
+        div(
+            cls := "section",
+            h1("Congratulations, YOU WON!"),
+            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board.countSmiles(view.winners.head) + " Smiles.")
+        )
+        else
+        div(
+            cls := "section",
+            h1("You... Lost..."),
+            h2("Player(s) " + view.winners.mkString(", ") + " won! With " + view.board.countSmiles(view.winners.head) + " Smiles.")
+        )
+        ,
+        div(
+            div( 
+                (for {
+                    (userId) <- view.board.keySet
+                } yield p(userId + ": " + smilesList(userId) + " smiles.")).toSeq
+            )
+        )
+    )
+    
   
   /** Transforms game view board into a structured FullBoard representation */
   private def createFullBoardParallel(view: PhaseView.GameView): FullBoard =
