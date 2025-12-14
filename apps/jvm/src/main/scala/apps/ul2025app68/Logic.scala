@@ -12,8 +12,8 @@ import cs214.webapp.IllegalMoveException
 import cs214.webapp.Action.Render
 import apps.ul2025app68.Card.*
 import apps.ul2025app68.PhaseView.*
-import scala.collection.mutable.Queue
 import scala.languageFeature.experimental.macros
+import scala.collection.immutable.Queue
 
 given MIN_NUMBER_OF_CARD_IN_HAND: Int = 5
 val MAX_NUMBER_OF_CARD_IN_HAND: Int = 6
@@ -47,7 +47,7 @@ class Logic extends StateMachine[Event, State, View]:
         val nbOfCardsInHands: Int = cardsInHand.length
         if gameIsOver(state.cardPiles) then
             throw IllegalMoveException("Accept your defeat, the game is over")
-        else if !isTurnOf(userId, playerQueue) then
+        else if !state.isTurnOf(userId) then
             throw IllegalMoveException("Not your turn to play")
         else event match
             case Event.PlayCard(card: Card, selectedUser: UserId) =>
@@ -65,16 +65,16 @@ class Logic extends StateMachine[Event, State, View]:
                 else 
                     val newBoard = card match
                         case MalusCard(malus) => malus match
-                            case Malus.Disease => placeCard(card, selectedUser, board)
-                            case Malus.Accident => placeCard(card, selectedUser, board)
-                            case Malus.BurnOut => placeCard(card, selectedUser, board)
-                            case Malus.Tax => removeCard(selectedUser, board):
+                            case Malus.Disease => board.placeCard(card, selectedUser)
+                            case Malus.Accident => board.placeCard(card, selectedUser)
+                            case Malus.BurnOut => board.placeCard(card, selectedUser)
+                            case Malus.Tax => board.removeCard(selectedUser):
                                 case m: Money => !m.used
                                 case _ => false
-                            case Malus.Divorce => removeCard(selectedUser, board)(_ == Marriage)
-                            case Malus.Dismissal => removeCard(selectedUser, board)(_.isInstanceOf[Profession])
-                            case Malus.TerroristAttack => removeCard(selectedUser, board, all = true)(_ == Child)
-                            case Malus.RepeatYear => removeCard(selectedUser, board)(_ == Study)
+                            case Malus.Divorce => board.removeCard(selectedUser)(_ == Marriage)
+                            case Malus.Dismissal => board.removeCard(selectedUser)(_.isInstanceOf[Profession])
+                            case Malus.TerroristAttack => board.removeCard(selectedUser, all = true)(_ == Child)
+                            case Malus.RepeatYear => board.removeCard(selectedUser)(_ == Study)
                         case Travel(price) =>
                             val newPlayedHandOpt = playerHand.handAfterPaying(price)
                             if userId != selectedUser then
@@ -82,7 +82,7 @@ class Logic extends StateMachine[Event, State, View]:
                             else if newPlayedHandOpt.isEmpty && !playerHand.hasBonus(Bonus.FreeTravel) then
                                 throw IllegalMoveException("You don't have enough money to Travel")
                             else
-                                board.updated(userId, card +: newPlayedHandOpt.get)
+                                board.updated(userId, newPlayedHandOpt.get).placeCard(card, userId)
                         case House(price) =>
                             val newPlayedHandOpt = playerHand.handAfterPaying(price)
                             if userId != selectedUser then
@@ -90,12 +90,12 @@ class Logic extends StateMachine[Event, State, View]:
                             else if newPlayedHandOpt.isEmpty && !playerHand.hasBonus(Bonus.FreeHouse) then
                                 throw IllegalMoveException("You don't have enough money by this House")
                             else
-                                board.updated(userId, card +: newPlayedHandOpt.get)
+                                board.updated(userId, newPlayedHandOpt.get).placeCard(card, userId)
                         case _ =>
                             if userId != selectedUser then
                                 throw IllegalMoveException("You should play this card on yourself")
                             else 
-                                placeCard(card, userId, board)
+                                board.placeCard(card, userId)
 
                     val newHands: Map[UserId, Hand] = hands.updated(
                         userId, cardsInHand.patch(cardsInHand.indexOf(card), Nil, 1)
@@ -103,13 +103,11 @@ class Logic extends StateMachine[Event, State, View]:
                     
                     Seq(
                         Render(
-                            toNextPlayer(
-                                state.copy(
-                                    hands = newHands,
-                                    board = newBoard,
-                                    log = log.write(userId)(event)
-                                )
-                            )
+                            state.copy(
+                                hands = newHands,
+                                board = newBoard,
+                                log = log.write(userId)(event)
+                            ).toNextPlayer
                         )
                     )
 
@@ -127,7 +125,7 @@ class Logic extends StateMachine[Event, State, View]:
                                 cardPiles = cardPiles.discard(card),
                                 playerQueue = toNextPlayer(state).playerQueue,
                                 log = log.write(userId)(event)
-                            )
+                            ).toNextPlayer
                         )
                     )
                 else 
@@ -165,15 +163,13 @@ class Logic extends StateMachine[Event, State, View]:
                 else if nbOfCardsInHands != MIN_NUMBER_OF_CARD_IN_HAND then
                     throw IllegalMoveException(f"Impossible situation happened: you have ${nbOfCardsInHands} cards, which is Illegal")
                 else 
-                    val newBoard = removeCard(userId, board)(_.isInstanceOf[Profession])
+                    val newBoard = board.removeCard(userId)(_.isInstanceOf[Profession])
                     Seq(
                         Render(
-                            toNextPlayer(
-                                state.copy(
-                                    board = newBoard,
-                                    log = log.write(userId)(event)
-                                )
-                            )
+                            state.copy(
+                                board = newBoard,
+                                log = log.write(userId)(event)
+                            ).toNextPlayer
                         )
                     )
             case Event.EndGame =>
@@ -192,8 +188,8 @@ class Logic extends StateMachine[Event, State, View]:
         val State(hands, board, cardPiles, playerQueue, log) = state
 
         if gameIsOver(state.cardPiles) then
-            val maxSmiles = countSmilesMap(board).values.max          
-            val winners = countSmilesMap(board).filter(_._2 == maxSmiles).keys.toSeq       
+            val maxSmiles = board.countSmilesMap.values.max          
+            val winners = board.countSmilesMap.filter(_._2 == maxSmiles).keys.toSeq       
             View(VictoryView(winners, board, log))
 
         else hands.get(userId) match
@@ -306,98 +302,9 @@ def setPiles(rand: Random = Random, size: Int = 30): CardPiles =
 
     val shuffled = scala.util.Random.shuffle(pile)
 
-    CardPiles(shuffled, List.empty)
+    CardPiles(shuffled, List.empty)        
 
 
-/** Places a card onto a player's played hand (their board).
-  *
-  * The card is appended at the end of the player's vector of played cards.
-  *
-  * @param card
-  *   The card to place.
-  * @param userId
-  *   The player receiving the card (could be self or another player, depending on rules).
-  * @param board
-  *   The current board state.
-  * @return
-  *   A new board where `card` has been appended to `userId`'s played hand.
-  */
-def placeCard(card: Card, userId: UserId, board: Board): Board =
-    board.updated(
-        userId, card +: board.get(userId).get 
-    )
-
-
-/** Removes a card from a player's played hand, based on a predicate.
-  *
-  * Used to apply maluses that destroy/remove some existing card(s) from the target player.
-  *
-  * Behavior:
-  *   - If the player does not have any card satisfying `identifier`, the move is illegal.
-  *   - If `all = false`, removes exactly one matching card (the first match).
-  *   - If `all = true`, removes all matching cards.
-  *
-  * @param identifier
-  *   Predicate that returns true for the cards we want to remove.
-  * @param userId
-  *   The target player.
-  * @param board
-  *   The current board.
-  * @param all
-  *   If true, remove all matching cards; otherwise remove only one.
-  * @throws IllegalMoveException
-  *   If no matching card exists in the target player's played hand.
-  * @return
-  *   A new board where the matching card(s) have been removed from `userId`'s played hand.
-  */
-def removeCard(userId: UserId, board: Board, all: Boolean = false)(identifier: Card => Boolean): Board =
-    val playedHand = board.get(userId).get 
-    if !playedHand.exists(identifier) then
-        throw IllegalMoveException("An error occured, you can't remove the card you want")
-    else if all then
-        board.updated(
-            userId, playedHand.filterNot(identifier)
-        )
-    else
-        val index = playedHand.indexWhere(identifier)
-        board.updated(
-            userId, playedHand.patch(index, Nil, 1)
-        )
-    
-    
-    
-
-/** 
-  * Count the number of Smiles for each player in the game. 
-  * ("Smiles" is the name for points, and the player with the most number of Smiles win)
-  *
-  * @param board
-  *     A map that links each player with the cards they have played during the game.
-  *
-  * @return
-  *   A Map associating each player with their number of points.
-  */
-def countSmilesMap(board: Board): Map[UserId, Int] =
-    board.keySet.map(userId =>
-        (userId, board.countSmiles(userId))
-    ).toMap
-    
-
-
-/** Checks whether it is currently `userId`'s turn to play.
-  *
-  * The rule is simple: the player who is at the head of `playerQueue`
-  * is the only one allowed to perform an action.
-  *
-  * @param userId
-  *   The player who is trying to act.
-  * @param playerQueue
-  *   The queue representing turn order. The head is the current player.
-  * @return
-  *   True iff `userId` is the head of the queue.
-  */
-def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
-    playerQueue.head == userId
 
 
 /** Determines whether the game is over.
@@ -412,114 +319,7 @@ def isTurnOf(userId: UserId, playerQueue: Queue[UserId]): Boolean =
   */
 def gameIsOver(cardpiles: CardPiles): Boolean =
     // change to Paramètre, met qq chose de plus précis que state -- done ?
-    cardpiles.drawPileIsEmpty
-
-
-/** Advances the game to the next player, while applying "skip turn" maluses.
-  *
-  * This method rotates the `playerQueue` (cyclic order), and if the next
-  * player is affected by a skip-malus (Disease, Accident, BurnOut),
-  * then that player is skipped:
-  *   - the queue is rotated again
-  *   - the malus is consumed (destroyed from the player's board)
-  *
-  * The method keeps skipping until it finds a player that does NOT have
-  * a skip-malus, or until it has checked everyone once (to avoid infinite loops).
-  *
-  * @param state
-  *   The current state (hands, board, piles, queue, log).
-  * @return
-  *   A new state where:
-  *     - `playerQueue` has been rotated to the next valid player
-  *     - skipped players had one skip-malus removed from their board
-  *     - all other fields remain the same except the updated board/piles.
-  */
-def toNextPlayer(state : State): State =
-    // regarde ce que j'ai modifier pour isTurnOf: c'est toujours au tour du premier joueur dans la queue de jouer
-    // donc il faut que tu créer une nouvelle queue comme ça : toNextPlayer(Queue("1", "2", "3")) == Queue("2", "3", "1")
-    val State(hands, board, cardPiles, playerQueue, log) = state
-    if playerQueue.isEmpty then state
-    else
-        //use copies
-        var queue = Queue.from(playerQueue)
-        var b = board
-        var piles = cardPiles
-        var remaining = queue.size
-        var done = false
-
-        while !done && remaining > 0 do 
-            queue = Queue.from(queue.tail :+ queue.head)
-            val current = queue.head
-
-            if hasSkipMalus(current,b) then
-                val (newBoard,newCardPiles) = inflictSkipMalus(b,piles,current)
-                b = newBoard
-                piles = newCardPiles
-                remaining -= 1
-            else
-                done = true
-
-        State(hands, b, piles, queue, log)
-    
-    
-
-/** Checks whether a given player currently has a "skip turn" malus.
-  *
-  * A skip-malus is one of:
-  *   - Disease
-  *   - Accident
-  *   - BurnOut
-  *
-  * If at least one of those malus cards exists in the player's played hand,
-  * then the player should lose their next turn.
-  *
-  * @param userId
-  *   The player we check.
-  * @param board
-  *   The game board mapping each player to their played cards.
-  * @return
-  *   True iff the player's played hand contains a skip-malus.
-  */
-def hasSkipMalus(userId : UserId, board : Board): Boolean = 
-    board.getOrElse(userId,Vector.empty).exists{
-        case Card.MalusCard(Malus.Disease | Malus.Accident | Malus.BurnOut) => true
-        case _ => false
-    }
-
-
-/** Consumes (destroys) exactly one skip-malus from a player's played hand.
-  *
-  * This is used when a player is skipped: the malus should not remain forever,
-  * so we remove only the first occurrence of a skip-malus from their board.
-  *
-  * Important: the malus is NOT added to the trash pile (it is destroyed),
-  * because players should not be able to pick it up again.
-  *
-  * @param board
-  *   The board mapping each player to their played cards.
-  * @param cardPiles
-  *   The piles (kept unchanged here, because skip maluses are destroyed).
-  * @param userId
-  *   The skipped player whose malus we consume.
-  * @return
-  *   A pair (newBoard, newCardPiles) where:
-  *     - newBoard is the board with one skip-malus removed from `userId`
-  *     - newCardPiles is unchanged
-  */
-def inflictSkipMalus(board: Board, cardPiles: CardPiles, userId: UserId): (Board, CardPiles) =
-    val playedCards = board.getOrElse(userId, Vector.empty)
-    var removed = false
-    val newHand =
-        playedCards.flatMap {
-            case c @ Card.MalusCard(m @ (Malus.Disease | Malus.Accident | Malus.BurnOut))
-                if !removed =>
-                    removed = true
-                    None
-
-            case c =>
-                Some(c)
-        }
-    (board.updated(userId, newHand), cardPiles)
+    cardpiles.defaultPile.isEmpty
 
 
                                     
