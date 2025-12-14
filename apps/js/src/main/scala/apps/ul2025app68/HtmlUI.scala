@@ -255,6 +255,10 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 } yield p(userId + ": " + smilesList(userId) + " smiles.")).toSeq
             )
         ),
+      div(
+        cls := "section",
+        renderLogs(view.log)
+      )
     )
     
   
