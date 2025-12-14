@@ -10,10 +10,12 @@ extension (playedHand: PlayedHand)
     * @param bonus the bonus to look for
     * @return true if the bonus is present in the playedHand, false otherwise
     */
-    def hasBonus(bonus: Bonus): Boolean = playedHand.exists:
-        case p: Card.Profession => p.bonus.isDefined && p.bonus.get.exists(_==bonus)
-        case Card.Special(thatBonus, _) => thatBonus == bonus 
-        case _ => false 
+    def hasBonus(bonus: Bonus): Boolean = 
+        require(playedHand != null, "playedHand must not be null")
+        playedHand.exists:
+            case p: Card.Profession => p.bonus.isDefined && p.bonus.get.exists(_==bonus)
+            case Card.Special(thatBonus, _) => thatBonus == bonus 
+            case _ => false 
 
     
     /** Computes the state of the hand after paying the given amount of money.
@@ -37,12 +39,14 @@ extension (playedHand: PlayedHand)
     *   - `None` if the hand cannot pay the required amount
     */
     def handAfterPaying(amountToPay: Int): Option[PlayedHand] = 
+        require(playedHand != null, "playedHand must not be null")
         if amountToPay <= 0 then
             Some(playedHand)
         else
             val availableMoney: List[(Int,Int)] = // (index in hand, money)
                 playedHand.zipWithIndex.collect{
                     case (m @ Card.Money(amount, used), idx) if !used => // filter cards that are Money and not used
+                        assert(amount > 0, s"Money amount should be > 0, got $amount")
                         (idx, amount)
                 }.toList
             
@@ -52,6 +56,7 @@ extension (playedHand: PlayedHand)
                 if totalAvailable < amountToPay then // if not enough money to pay, no way to pay
                     None
                 else // if enough money to pay
+                    assert(totalAvailable >= amountToPay)
                     var bestCombo: Option[(Int,List[(Int,Int)])] = None // (totalAvailable,List[(idx,amount)]), the bestCombo is None at first
                     for 
                         k <- 1 to availableMoney.length
@@ -60,6 +65,7 @@ extension (playedHand: PlayedHand)
                         val sum = combo.map(_._2).sum
                         if sum >= amountToPay then
                             val overpay = sum - amountToPay
+                            assert(overpay >= 0)
                             bestCombo match
                                 case None => //initialized at None, updated in first iteration
                                     bestCombo = Some((sum,combo.toList))
@@ -68,16 +74,20 @@ extension (playedHand: PlayedHand)
                                     if overpay < bestOverpay || (overpay == bestOverpay && combo.size < bestList.size) then 
                                         // if pay less payed or if same payed but higher cards (keep smallest for more possibilities)
                                         bestCombo = Some((sum,combo.toList))
-
+                    assert(bestCombo.nonEmpty, "bestCombo should exist if totalAvailable >= amountToPay")
                     bestCombo match
                         case None => None
                         case Some((_,chosen)) => 
                             val indicesToUse: Set[Int]= chosen.map(_._1).toSet // Set of indexes of Money cards of the best way to pay
+                            assert(indicesToUse.size == chosen.size)
+                            assert(indicesToUse.forall(i => i >= 0 && i < playedHand.length))
                             val newHand: PlayedHand = 
                                 playedHand.zipWithIndex.map {
                                     case (m @ Card.Money(amount,used), idx) if indicesToUse.contains(idx) => 
+                                        assert(!used, s"Selected Money at idx=$idx was already used")
                                         m.copy(used = true) // if Money is used to pay here, copy but used = True now
                                     case (card, _) => card  // cards that are not money stay the same
                                 }
+                            assert(newHand.length == playedHand.length, "hand size must not change")
                             Some(newHand)
 
